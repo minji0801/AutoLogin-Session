@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- DevExtreme themes -->
+    <link rel="stylesheet" href="\stylesheets\dx.common.css">
+    <link rel="stylesheet" href="\stylesheets\dx.light.css">
+
+    <title>받은메일함 | View Mail</title>
+    <style>
+        #emailTree {
+            height: 550px;
+        }
+
+        ul {
+            padding: 0;
+            margin: 0;
+            margin-top: 5px;
+        }
+
+        ul li {
+            list-style-type: none;
+            display: inline-block;
+        }
+
+        /* 페이지 버튼 */
+        ul li button {
+            width: 30px;
+            /* 모든 버튼을 일정한 크기로 깔끔하게 보기 위해서 설정함. (실제로는 width를 설정하지 않음.) */
+            border-radius: 4px;
+            border-color: transparent;
+            background-color: aliceblue;
+            color: #337ab7;
+            padding: 5px;
+            margin-left: 2px;
+            font-weight: bold;
+        }
+
+        /* 페이지 버튼에 마우스 올렸을 때 */
+        ul li button:hover {
+
+            background-color: #265a87;
+            color: white;
+        }
+
+        /* 페이지 버튼 클릭했을 때 */
+        ul li button:active {
+
+            background-color: #193d5b;
+            color: white;
+        }
+
+        tr:hover {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="dx-viewport">
+    <div class="demo-container">
+        <div class="form">
+            <div class="dx-fieldset">
+                <div class="dx-field">
+                    <div class="dx-field-value" style="float: right;">
+                        <div id="searchMail" style="width: 300px; float: right;"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="emailTree"></div>
+        </div>
+        <div style="margin-top: 10px; text-align: center;">
+            <div class="pagination-wrapper clearfix">
+                <ul id="pages_moveByGroup" class="pagination float--right"></ul>
+            </div>
+        </div>
+    </div>
+</body>
+
+
+
+<!-- Library -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="/javascripts/dx.all.js"></script>
+
+<script>
+    var nowPage = 1;        // 현재 페이지 번호
+    var dataPerPage = 30;   // 한 페이지당 보여줄 게시물 수
+
+    const pageCount = 5;    // 한 화면에 보여줄 페이지 수
+    const sideBtnCountUp = Math.ceil((pageCount - 1) / 2);      // 중앙을 기준으로 양쪽에 위치할 버튼 수(올림)
+    const sideBtnCountDown = Math.floor((pageCount - 1) / 2);   // 중앙을 기준으로 양쪽에 위치할 버튼 수(내림)
+
+    // 페이지 버튼 클릭 시 실행
+    function btn_paging_click(page, pagingID) {
+
+        nowPage = page;
+
+        if (pagingID == 0) {
+
+            // 기본페이징
+            RefreshData();
+        }
+        else if (pagingID == 1) {
+
+            // 검색페이징
+            searchBindData();
+        }
+    }
+
+    // 투명버튼 만드는 함수
+    function transparentBtn(content) {
+        return '<li class="pagination-item"><button style="opacity: 0.0">' + content + '</button></li>';
+    }
+
+    // << < > >> 버튼 만드는 함수
+    function movePageBtn(id, clickEvent, content, pagingID) {
+        return '<li class="pagination-item"><button id="' + id + '" onclick="btn_paging_click(' + clickEvent + ', ' + pagingID +
+            ');" style="cursor: pointer;">' + content + '</button></li>';
+    }
+
+    // 현재페이지 버튼 만드는 함수
+    function currentPageBtn(content) {
+        return '<li class="pagination-item"><button class="active" style="background-color:#337ab7; color:white;">'
+            + content + '</button></li>';
+    }
+
+    // (현재페이지를 제외한)나머지페이지 버튼 만드는 함수
+    function restPageBtn(content, pagingID) {
+        return '<li class="pagination-item"><button onclick="btn_paging_click(' + content + ', ' + pagingID +
+            ');" style="cursor: pointer;">' + content + '</button></li>';
+    }
+
+
+    // 페이징(이전, 다음 클릭 시 페이지 그룹 단위로 이동)
+    function moveByGroup(totalData, currentPage, pagingID) {
+
+        const totalPage = Math.ceil(totalData / dataPerPage);   // 총 페이지 수
+        const pageGroup = Math.ceil(currentPage / pageCount);   // 페이지 그룹
+
+        let last = pageGroup * pageCount;   // 화면에 보여질 마지막 페이지 번호
+        if (last > totalPage)
+            last = totalPage;
+
+        let first = last - (pageCount - 1); // 화면에 보여질 첫번째 페이지 번호
+
+        const next = last + 1;
+        const prev = first - 1;
+
+        if (totalPage < 1)
+            first = last;
+
+        const pages = $("#pages_moveByGroup");
+        pages.empty();
+
+        // 한 그룹일때
+        if (totalPage / pageCount == 1 || totalPage / pageCount < 1) {
+
+            // 페이지버튼
+            for (let j = first; j <= last; j++) {
+                if (currentPage == (j)) {
+                    pages.append(currentPageBtn(j));
+                }
+                else if (j > 0) {
+                    pages.append(restPageBtn(j, pagingID));
+                }
+            }
+        }
+
+        // 두 그룹 이상일때
+        else {
+            pages.append(movePageBtn('home', 1, '<<', pagingID));     // 처음
+            pages.append(movePageBtn('prev1', prev, '<', pagingID));  // 이전
+
+            // 페이지 버튼
+            for (let j = first; j <= last; j++) {
+
+                if (currentPage == (j)) {
+                    pages.append(currentPageBtn(j));
+                }
+                else if (j > 0) {
+                    pages.append(restPageBtn(j, pagingID));
+                } else { }
+            }
+
+            pages.append(movePageBtn('next1', next, '>', pagingID));      // 다음
+            pages.append(movePageBtn('end', totalPage, '>>', pagingID));  // 맨끝
+
+            if (pageGroup == 1) {
+
+                // 첫번째 그룹일때
+                document.getElementById('home').style.opacity = "0.0";
+                document.getElementById('home').style.cursor = "default";
+                document.getElementById('home').onclick = null;
+
+                document.getElementById('prev1').style.opacity = "0.0";
+                document.getElementById('prev1').style.cursor = "default";
+                document.getElementById('prev1').onclick = null;
+
+            }
+            else if (last == totalPage) {
+
+                // 마지막 그룹일때
+                document.getElementById('next1').style.opacity = "0.0";
+                document.getElementById('next1').style.cursor = "default";
+                document.getElementById('next1').onclick = null;
+
+                document.getElementById('end').style.opacity = "0.0";
+                document.getElementById('end').style.cursor = "default";
+                document.getElementById('end').onclick = null;
+
+            } else { }
+        }
+    }
+
+    function BindData() {
+
+        $.ajax({
+            type: 'POST',
+            url: '/api/getMailData',
+            data: { pPage: nowPage, pPageCount: dataPerPage },
+            dataType: "json"
+            , success: function (response) {
+
+                console.log(JSON.stringify(response.tEMLCnt));
+                var tEMLCnt = JSON.stringify(response.tEMLCnt[0].tEMLCnt).replace(/"/g, '');
+                console.log(tEMLCnt);
+
+                moveByGroup(tEMLCnt, nowPage, 0);
+
+                // 모바일인지 체크해서 tree를 다르게 보여주면 좋겠다..
+
+                $("#emailTree").dxTreeList({
+                    dataSource: response.data,
+                    rootValue: 0,
+                    keyExpr: "EML_ID",
+                    columns: [
+
+                        {
+                            dataField: "EML_From",
+                            caption: "보낸사람",
+                            width: 250
+                        },
+                        {
+                            dataField: "EML_Subject",
+                            caption: "제목"
+                        },
+                        {
+                            dataField: "EML_Date",
+                            caption: "날짜",
+                            dataType: "datetime",
+                            format: "yy.MM.dd hh:mm",
+                            width: 130
+                        }
+
+                    ],
+                    scrolling: { mode: "standard" },
+                    sorting: { mode: "none" },
+                    selection: { mode: "single" },
+                    showRowLines: true,
+                    showBorders: true,
+                    columnAutoWidth: true,
+                    onRowClick: function (e) {
+                        location.href = "contentmail?" + e.data.EML_ID;
+                    }
+                });
+            }
+        })
+    };
+
+    function RefreshData() {
+
+        $("#emailTree").dxTreeList("dispose");
+
+        BindData();
+    }
+
+    function searchBindData() {
+
+        var value = $(".dx-texteditor-input").val(); // 검색내용
+
+        $.ajax({
+            url: '/api/searchMail',
+            type: 'POST',
+            data: { text: value, pPage: nowPage, pPageCount: dataPerPage },
+            dataType: "json"
+            , success: function (response) {
+
+                var emlSCnt = JSON.stringify(response.emlSCnt[0].emlSCnt).replace(/"/g, '');
+                console.log(emlSCnt);
+
+                $("#pages_moveByGroup").children().remove();
+                moveByGroup(emlSCnt, nowPage, 1);
+
+                $("#emailTree").dxTreeList("dispose");
+
+                $("#emailTree").dxTreeList({
+                    dataSource: response.data,
+                    rootValue: 0,
+                    keyExpr: "EML_ID",
+                    columns: [
+
+                        {
+                            dataField: "EML_From",
+                            caption: "보낸사람",
+                            width: 250
+                        },
+                        {
+                            dataField: "EML_Subject",
+                            caption: "제목"
+                        },
+                        {
+                            dataField: "EML_Date",
+                            caption: "날짜",
+                            dataType: "datetime",
+                            format: "yy.MM.dd hh:mm",
+                            width: 130
+                        }
+
+                    ],
+                    scrolling: { mode: "standard" },
+                    sorting: { mode: "none" },
+                    selection: { mode: "single" },
+                    showRowLines: true,
+                    showBorders: true,
+                    columnAutoWidth: true,
+                    onRowClick: function (e) {
+                        location.href = "contentmail?" + e.data.EML_ID;
+                    }
+                });
+            }
+        })
+    }
+
+    $(function () {
+        BindData();
+
+        $("#searchMail").dxTextBox({
+            placeholder: "메일검색",
+            showClearButton: true,
+            onEnterKey: function (e) {
+
+                // 엔터 누르면 검색하기
+
+                searchBindData();
+
+                // 첫번째 페이징 버튼 눌리게 하기
+                btn_paging_click(1, 1);
+            },
+            onInput: function (e) {
+
+                if ($(".dx-texteditor-input").val() == "") {
+
+                    RefreshData();
+                }
+            }
+        });
+    });
+</script>
+
+</html>

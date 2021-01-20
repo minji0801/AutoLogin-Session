@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메인화면</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        * {
+            font-family: 'Jua', sans-serif;
+        }
+
+        .wrap {
+            width: 300px;
+            margin: auto;
+            text-align: center;
+            padding: 20px;
+            border: 1px solid black;
+        }
+
+        .username {
+            font-size: 25px;
+        }
+
+        .m-t-10 {
+            margin-top: 10px;
+        }
+
+        .m-t-40 {
+            margin-top: 40px;
+        }
+
+        .btn {
+            width: 300px;
+            height: 30px;
+            cursor: pointer;
+            background-color:lightgray;
+            border-radius: 0px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border: none;
+        }
+    </style>
+    <script>
+        $(function() {
+            getName();
+        })
+
+        function getName() {
+            $.ajax({
+                type: 'GET',
+                url: '/users/getName',
+                dataType: 'json',
+                success: function (response) {
+
+                    console.log(response.data);
+
+                    if (response.data == 'NO') {
+                        alert('로그인해주세요.');
+                        location.href='/login';
+
+                    } else if (response.data == 'INCORRECT') {
+                        alert('사용자가 없습니다. 쿠키를 지워주세요.');
+
+                    } else if (response.data == 'OK') {
+                        $('#name').text(response.name);
+
+                    } 
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>Welcome!</h1>
+        <span class="username" id="name"></span>님
+        <hr class="m-t-40">
+        <form action="/users/logout" method="post">
+            <input class="m-t-10 btn" type="submit" value="로그아웃" />
+        </form>
+    </div>
+</body>
+
+</html>

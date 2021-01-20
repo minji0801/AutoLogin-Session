@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- DevExtreme themes -->
+    <link rel="stylesheet" href="\stylesheets\dx.common.css">
+    <link rel="stylesheet" href="\stylesheets\dx.light.css">
+
+    <title id="title">Content Mail</title>
+    <style>
+        .buttons {
+            padding: 20px;
+            border-bottom: 1px solid #ececec;
+        }
+        .viewer_header {
+            padding: 20px;
+            border-bottom: 1px solid #ececec;
+        }
+
+        .mail_file {
+            padding: 20px;
+        }
+
+        .txt_mailview {
+            padding: 20px;
+            border-bottom: 1px solid #ececec;
+        }
+
+        #subject {
+            font-size: 20px;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        #date {
+            margin: 20px;
+            width: auto;
+            text-align: right;
+            font-size: 13px;
+        }
+
+        .info {
+            margin-bottom: 10px;
+        }
+
+        .info dt {
+            width: 60px;
+            float: left;
+            font-weight: bold;
+        }
+
+        .info dd {
+            text-indent: 20px;
+        }
+
+        .list-inline {
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .list-inline li {
+            margin-bottom: 10px;
+        }
+
+        .list-inline li a {
+            color: #111;
+            text-decoration: none;
+        }
+
+        .list-inline li a:hover {
+            color: #111;
+            text-decoration: underline;
+        }
+
+        #download {
+            width: 20px;
+            background-color: dodgerblue;
+            border: none;
+            color: #fff;
+            padding: 3px;
+            text-align: center;
+            display: inline-block;
+            margin: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="dx-viewport">
+    <div class="demo-container">
+        <div class="buttons">
+            <div id="reply">답장</div>
+            <div id="replyAll">전체답장</div>
+            <div id="delivery">전달</div>
+        </div>
+        <div class="viewer_header">
+            <div id="subject"></div>
+            <div id="date"></div>
+            <dl class="info" id="infoFrom">
+                <dt id="dt_from">보낸사람</dt>
+                <dd id="dd_from"></dd>
+            </dl>
+            <dl class="info" id="infoTo">
+                <dt id="dt_to">받는사람</dt>
+                <dd id="dd_to"></dd>
+            </dl>
+            <dl class="info" id="infoCc">
+                <dt id="dt_cc">참조</dt>
+                <dd id="dd_cc"></dd>
+            </dl>
+        </div>
+        <div class="viewer_body">
+            <div class="mail_file" id="at">
+                <div style="font-weight: bold;">첨부파일</div>
+            </div>
+            <div class="txt_mailview"></div>
+        </div>
+    </div>
+</body>
+
+
+
+<!-- Library -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="/javascripts/dx.all.js"></script>
+
+<script>
+    $(function () {
+
+        var EML_ID = location.search.replace("?", "");
+        console.log(EML_ID);
+
+        $.ajax({
+            type: 'GET',
+            url: '/api/getContents/' + EML_ID,
+            //data: {id: EML_ID},
+            //dataType: "json",
+            success: function (response) {
+
+                $("#title").text(response.data[0].EML_Subject);             // 탭명
+
+                if (response.data[0].EML_Subject == "") {                    // 제목
+
+                    $("#subject").text("제목없음");
+
+                } else {
+
+                    $("#subject").text(response.data[0].EML_Subject);
+
+                }
+
+                $("#date").text(getFormatDate(response.data[0].EML_Date));  // 날짜
+
+                $("#dd_from").text(response.data[0].EML_From);              // 보낸사람
+
+                if (response.data[0].EML_To == "") {                         // 받는사람
+
+                    $("#infoTo").remove();
+
+                } else {
+
+                    $("#dd_to").text(response.data[0].EML_To);
+
+                }
+
+                if (response.data[0].EML_Cc == "") {                         // 참조
+
+                    $("#infoCc").remove();
+
+                } else {
+
+                    $("#dd_cc").text(response.data[0].EML_Cc);
+
+                }
+
+                if (response.attach.length > 0) {                           // 첨부파일
+
+                    $(".mail_file").css("border-bottom", "1px solid #ececec");
+
+                    var attachTag = '<ul class="list-inline">';
+
+                    for (var i = 0; i < response.attach.length; i++) {
+
+                        attachTag += '<li class="list-inline-item">\
+                                    <a href="/attach' + response.attach[i].EMLA_FilePath + response.attach[i].EMLA_FileName +
+                            '" download="' + response.attach[i].EMLA_FileOrgName + '"><button id="download">⇩</button></a>\
+                                    <a href="/attach' + response.attach[i].EMLA_FilePath + response.attach[i].EMLA_FileName +
+                            '" download="' + response.attach[i].EMLA_FileOrgName + '">'
+                            + response.attach[i].EMLA_FileOrgName + '</a></li>';
+                    }
+
+                    attachTag += '<ul class="list-inline">';
+
+                    $('#at').append(attachTag);
+
+                } else {
+                    $(".mail_file").remove();
+                }
+
+                $(".txt_mailview").append(response.data[0].EML_Contents);     // 내용
+            }
+        });
+
+        $("#reply").dxButton({
+            stylingMode: "contained",
+            text: "Contained",
+            type: "normal",
+            height: 30,
+            onClick: function() {
+
+                location.href = "sendmail?r?" + EML_ID;
+            }
+        });
+        $("#replyAll").dxButton({
+            stylingMode: "contained",
+            text: "Contained",
+            type: "normal",
+            height: 30,
+            onClick: function() {
+                
+                location.href = "sendmail?rA?" + EML_ID;
+            }
+        });
+        $("#delivery").dxButton({
+            stylingMode: "contained",
+            text: "Contained",
+            type: "normal",
+            height: 30,
+            onClick: function() {
+                
+                location.href = "sendmail?d?" + EML_ID;
+            }
+        });
+    });
+
+    // 날짜 포맷
+    function getFormatDate(date) {
+
+        var removeT = date.replace("T", " ");
+
+        var removeZ = removeT.replace("Z", "");
+
+        var sec = removeZ.slice(-7);
+
+        var removeSec = removeZ.replace(sec, "");
+
+        return removeSec;
+    }
+</script>
+
+</html>

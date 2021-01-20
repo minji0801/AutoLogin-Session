@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- DevExtreme themes -->
+    <link rel="stylesheet" href="\stylesheets\dx.common.css">
+    <link rel="stylesheet" href="\stylesheets\dx.light.css">
+
+    <!-- Jodit themes -->
+    <!-- <link rel="stylesheet" href="\stylesheets\jodit.min.css"> -->
+    <link rel="stylesheet" href="\stylesheets\jodit.css">
+
+    <title>메일쓰기 | Send Mail</title>
+    <style>
+        .m-b-20 {
+            margin-bottom: 20px;
+        }
+
+        .m-b-10 {
+            margin-bottom: 10px;
+        }
+
+        #file {
+            height: 120px;
+            border: 1px solid #d3d3d3;
+            border-radius: 4px;
+            overflow-x: hidden;
+            overflow-y: scroll;
+        }
+
+        .file_index_ {
+            width: 100%;
+            padding: 5px;
+            float: left;
+        }
+
+        .file_index_>.close {
+            cursor: pointer;
+            float: left;
+            margin: 0 10px 0 5px;
+        }
+
+        .file_index_>.file_name {
+            max-width: calc(100% - 120px);
+            float: left;
+            margin-right: 10px;
+        }
+
+        .file_index_>.file_size {
+            width: 100px;
+            float: right;
+        }
+
+        #employees {
+            max-height: 440px;
+        }
+
+        #bm_tree {
+            max-height: 380px;
+            min-height: 380px;
+        }
+
+        .dx-sortable-dragging {
+            opacity: 0.9
+        }
+
+        .options {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: rgba(191, 191, 191, 0.15);
+            position: relative;
+        }
+
+        .caption {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .option {
+            margin-top: 10px;
+            margin-right: 40px;
+            display: inline-block;
+        }
+
+        .option:last-child {
+            margin-right: 0;
+        }
+
+        /* 입력하는 부분의 크기에 따라 왼쪽이 내려가는 현상 있음 */
+        .jodit-container {
+            width: 100%;
+            display: inline-block;
+            position: relative;
+            vertical-align: top;
+            /* height: 200px !important; */
+        }
+
+        .jodit_fullsize {
+            position: fixed !important;
+            width: 100%;
+        }
+
+        .pagination-wrapper {
+            width: 100%;
+            position: relative;
+            float: left;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        ul {
+            padding: 0;
+            margin: 0;
+            margin-top: 5px;
+        }
+
+        ul li {
+            list-style-type: none;
+            display: inline-block;
+        }
+
+        /* 페이지 버튼 */
+        ul li button {
+            width: 30px;
+            /* 페이징 방법 3개의 모든 버튼을 일정한 크기로 깔끔하게 보기 위해서 설정함. (실제로는 width를 설정하지 않음.) */
+            border-radius: 4px;
+            border-color: transparent;
+            background-color: aliceblue;
+            color: #337ab7;
+            padding: 5px;
+            margin-left: 2px;
+            font-weight: bold;
+        }
+
+        /* 페이지 버튼에 마우스 올렸을 때 */
+        ul li button:hover {
+
+            background-color: #265a87;
+            color: white;
+        }
+
+        /* 페이지 버튼 클릭했을 때 */
+        ul li button:active {
+
+            background-color: #193d5b;
+            color: white;
+        }
+
+        /* p {
+                margin: 0px;
+            } */
+    </style>
+</head>
+
+<body class="dx-viewport">
+    <div class="demo-container">
+        <div id="container">
+            <div class="form">
+                <div class="dx-field">
+                    <div id="btnSendMail" style="max-width: 100px;"></div>
+                    <div id="summary"></div>
+                </div>
+                <div class="dx-fieldset">
+                    <div class="dx-field">
+                        <div class="dx-field-label">보내는사람</div>
+                        <div class="dx-field-value">
+                            <div id="from"></div>
+                        </div>
+                    </div>
+                    <div class="dx-field">
+                        <div class="dx-field-label">받는사람</div>
+                        <div class="dx-field-value">
+                            <div id="to"></div>
+                        </div>
+                    </div>
+                    <div class="dx-field">
+                        <div class="dx-field-label">참조</div>
+                        <div class="dx-field-value">
+                            <div id="cc"></div>
+                        </div>
+                    </div>
+                    <div class="dx-field">
+                        <div class="dx-field-label">제목</div>
+                        <div class="dx-field-value">
+                            <div id="subject"></div>
+                        </div>
+                    </div>
+                    <div class="dx-field">
+                        <div class="dx-field-label">첨부</div>
+                        <div class="dx-field-value">
+                            <div class="m-b-10">
+                                <div id="btnFileAttach" style="max-width: 100px;"></div>
+                                <input id="inputAttach" type="file" name="file" multiple hidden>
+                            </div>
+                            <div id="file" class="m-b-10">
+                                <div id="fileList"></div>
+                            </div>
+                            <div class="m-b-10" style="color: dodgerblue; max-height: 50px;">
+                                <label id="totalUpload" class="uploadFileInfo" style="float: left;">0개 업로드 완료</label>
+                                <label id="totalCapacity" class="uploadFileInfo" style="float: right;">0KB</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="editor"></div>
+</body>
+
+
+
+<!-- Library -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="/javascripts/dx.all.js"></script>
+<!-- <script type="text/javascript" src="/javascripts/jodit.min.js"></script> -->
+<script type="text/javascript" src="/javascripts/jodit.js"></script>
+
+<script>
+    var attachFiles = [];   // 첨부 파일 정보가 담긴 배열
+    var uploadName = [];    // \public\upload\ 에 있는 파일명이 담긴 배열
+    var fileCount = 0;      // 이메일로 보낼 파일 개수
+    var totalFileSize = 0;  // 업로드된 파일의 총 size
+
+    // 파일 선택되면
+    $('#inputAttach').change(function (e) {
+        var files = $('input[name="file"]')[0].files;
+        console.log("선택한 파일 :");
+        console.log(files);
+
+        var formData = new FormData();
+
+        for (var i = 0; i < files.length; i++) {
+            //console.log(i + " : " + files[i].name);
+            var file = files[i];
+            var size = attachFiles.push(file);  // 첨부파일 목록에 추가
+            preview(file, size - 1);
+
+            formData.append('files', files[i]);
+        }
+
+        formData.append("B_IDs", sessionStorage.getItem("_B_IDs"));     // B_IDs 값 넣기
+        formData.append("CR_IDs", sessionStorage.getItem("_CR_IDs"));   // CR_IDs 값 넣기
+        // B_IDs: 
+        // CR_IDs : sessionStorage.getItem("_CR_IDs"),
+
+        apiFileUpload(formData);
+    })
+
+
+    $(function () {
+
+        var arr = location.search.split("?");
+        var EML_ID = arr[2];
+        console.log(EML_ID);
+
+        if (arr[1] == "r") {
+
+            // 답장
+            console.log("답장");
+
+            $.ajax({
+                type: 'GET',
+                url: '/api/getContents/' + EML_ID,
+                success: function (response) {
+
+                    if (response.data[0].EML_Subject == "") {   // RE: 제목
+
+                        $("#subject").dxTextBox("instance").option("value", "RE: 제목없음");
+
+                    } else {
+
+                        $("#subject").dxTextBox("instance").option("value", "RE: " + response.data[0].EML_Subject);
+
+                    }
+
+                    $("#to").dxTextBox("instance").option("value", response.data[0].EML_From);  // 보낸사람 -> 받는사람
+
+                    appendEditor(response); // 내용
+                }
+            });
+        }
+        else if (arr[1] == "rA") {
+
+            // 전체답장
+            console.log("전체답장");
+
+            $.ajax({
+                type: 'GET',
+                url: '/api/getContents/' + EML_ID,
+                success: function (response) {
+
+                    if (response.data[0].EML_Subject == "") {   // RE: 제목
+
+                        $("#subject").dxTextBox("instance").option("value", "RE: 제목없음");
+
+                    } else {
+
+                        $("#subject").dxTextBox("instance").option("value", "RE: " + response.data[0].EML_Subject);
+
+                    }
+
+                    if (response.data[0].EML_To == "") {    // 보낸사람, 다른 받는사람 -> 받는사람
+
+                        $("#to").dxTextBox("instance").option("value", response.data[0].EML_From);
+
+                    } else {
+
+                        $("#to").dxTextBox("instance").option("value", response.data[0].EML_From);
+
+                        console.log(response.data[0].EML_To.split(", "));
+
+                        var toList = response.data[0].EML_To.split(", ");
+
+                        var toValue = $("#to").dxTextBox("instance").option('value');
+
+                        for (i = 1; i < toList.length; i++) {
+
+                            toValue += ", " + toList[i];
+                        }
+
+                        console.log(toValue);
+
+                        $("#to").dxTextBox("instance").option("value", toValue);
+                    }
+
+                    if (response.data[0].EML_Cc == "") {    // 참조
+
+                        $("#cc").dxTextBox("instance").option("value", "");
+
+                    } else {
+
+                        console.log(response.data[0].EML_Cc.split(", "));
+
+                        var ccList = response.data[0].EML_Cc.split(", ");
+
+                        var ccValue = $("#cc").dxTextBox("instance").option('value');
+
+                        for (i = 0; i < ccList.length; i++) {
+
+                            if (i == 0) {
+                                ccValue += ccList[i];
+                            } else {
+                                ccValue += ", " + ccList[i];
+                            }
+                        }
+
+                        console.log(ccValue);
+
+                        $("#cc").dxTextBox("instance").option("value", ccValue);
+                    }
+
+                    appendEditor(response); // 내용
+                }
+            });
+        }
+        else if (arr[1] == "d") {
+
+            // 전달
+            console.log("전달");
+
+            // 전달은 아직 구현 안됨.
+        }
+
+        fileDropDown();
+
+        $("#summary").dxValidationSummary({});
+
+        $("#btnSendMail").dxButton({
+            stylingMode: "contained",
+            text: "보내기",
+            type: "default",
+            width: 120,
+            useSubmitBehavior: true,
+            onClick: function () {
+                SendMail();
+            }
+        });
+        $("#from").dxTextBox({
+            //value: "post@yurim-info.com"
+            value: "minji_0801@daum.net"
+        }).dxValidator({
+            validationRules: [{
+                type: "required",
+                message: "보내는사람 메일주소를 입력해주세요."
+            }, {
+                type: "email",
+                message: "메일주소 형식이 올바르지 않습니다."
+            }]
+        });
+        $("#to").dxTextBox({
+            // value: "yr.us.kim2@gmail.com"
+            value: "minji_0801@naver.com"
+            // value: "yr.minji.kim@gmail.com"
+        }).dxValidator({
+            validationRules: [{
+                type: "required",
+                message: "받는사람 메일주소를 입력해주세요."
+            }/* , {
+                type: "email",
+                message: "메일주소 형식이 올바르지 않습니다."
+            } */]
+        });
+        $("#cc").dxTextBox({
+            // value: "unseob2@gmail.com"
+            //value: "kimminji080122@gmail.com"
+        })/* .dxValidator({
+            validationRules: [{
+                type: "email",
+                message: "메일주소 형식이 올바르지 않습니다."
+            }]
+        }) */;
+        $("#subject").dxTextBox({
+            value: "테스트 이메일"
+        });
+        $("#btnFileAttach").dxButton({
+            stylingMode: "contained",
+            text: "파일첨부",
+            type: "normal",
+            width: 120,
+            onClick: function () {
+                $("#inputAttach").click();
+            }
+        });
+    });
+
+    function appendEditor(response) {
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;---원본메일---");
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;보낸사람: " + response.data[0].EML_From);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;받는사람: " + response.data[0].EML_To);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;참조: " + response.data[0].EML_Cc);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;날짜: " + response.data[0].EML_Date);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;제목: " + response.data[0].EML_Subject);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;" + response.data[0].EML_Contents);
+    }
+
+    const editor = new Jodit('#editor', {
+        // defaultMode: Jodit.MODE_SPLIT // html 태그 보이기
+        // readonly: true , // 글 수정 금지 게시판 클릭 시 포함되어야 함
+        // toolbarButtonSize: "small" // 툴바 크기 조정
+        askBeforePasteHTML: false, // 붙여넣기 시 어떤 방식으로 넣을 지 선택 옵션 팝업 제거
+        removeButtons: ["file", "image", "video"], // 삭제할 버튼들
+        // toolbar: false,  // 위의 툴바 지우기
+        // showCharsCounter: false,  //Char 카운트
+        // showWordsCounter: false,  //글자 카운트
+        // showXPathInStatusbar: false  //html 태그 표시
+        minHeight: 650,  // 최소 길이
+        maxHeight: 650,   // 최대 길이
+        // minWidth: 500,   // 최소 너비
+        // maxWidth: 900    // 최대 너비
+        uploader: {
+            "insertImageAsBase64URI": true
+        },
+        enter: "BR",
+        //autofocus : true
+    });
+
+    function fileDropDown() {
+        var dropZone = $("#file");  // 드롭존 지정
+        //Drag기능 
+        dropZone.on('dragenter', function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            // 드롭다운 영역 css
+            dropZone.css('background-color', '#E3F2FC');
+        });
+        dropZone.on('dragleave', function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            // 드롭다운 영역 css
+            dropZone.css('background-color', '#FFFFFF');
+        });
+        dropZone.on('dragover', function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            // 드롭다운 영역 css
+            dropZone.css('background-color', '#E3F2FC');
+        });
+        dropZone.on('drop', function (e) { // drop 이벤트가 발생한 시점
+            e.preventDefault();
+            // 드롭다운 영역 css
+            dropZone.css('background-color', '#FFFFFF');
+
+            // files 로 가져오면 폴더도 같이 가져오게 됨
+            // folder를 인식하는 방법 확인 필요
+            // folder의 경우 type 값이 '' 로 들어오게 됨(빈칸)
+
+            var files = e.originalEvent.dataTransfer.files; // drop한 FileList 객체(주의! FileList는 배열이 아닌 유사배열이다.)
+            console.log("드롭한 첨부파일 :");
+            console.log(files);
+
+            if (files != null) {
+                if (files.length < 1) {
+                    //alert("폴더 업로드 불가");
+                    //return;
+                } else {
+                    var formData = new FormData();
+
+                    for (var i = 0; i < files.length; i++) {
+
+                        var file = files[i];
+                        var size = attachFiles.push(file);  // 첨부파일 목록에 추가
+                        preview(file, size - 1);            // 미리보기 만들기
+
+                        // type 으로 확인할 것
+
+
+                        // 해당 파일을 어떻게 Ajax로 보낼것인지....
+                        if (files[i].type != "") {
+                            // 폴더가 아니면
+                            //console.log(files[i]);
+                            formData.append('files', files[i]); // files 넣기
+
+                            // console.log('... file[' + i + '].name = ' + files[i].name + "... type : " + files[i].type);
+
+                            // let today = new Date();   
+
+                            // let year = today.getFullYear(); // 년도
+                            // let month = today.getMonth() + 1;  // 월
+                            // let date = today.getDate();  // 날짜
+                            // let hour = today.getHours();  // 시
+                            // let minute = today.getMinutes();  // 분
+                            // let second = today.getSeconds();  // 초
+
+                            // var fileName = files[i].name;
+
+                            // //files[i].name = year + '' + month + '' + date + '' + hour + '' + minute + '' + second;
+
+                            // console.log(files[i]);
+
+                            //console.log("Append Form");
+                        }
+                        else {
+                            // 폴더면
+                            alert("impossible folder upload");
+                            return;
+                        }
+                    }
+
+                    formData.append("B_IDs", sessionStorage.getItem("_B_IDs"));     // B_IDs 값 넣기
+                    formData.append("CR_IDs", sessionStorage.getItem("_CR_IDs"));   // CR_IDs 값 넣기
+                    // B_IDs: 
+                    // CR_IDs : sessionStorage.getItem("_CR_IDs"),
+
+                    apiFileUpload(formData);
+                }
+                //selectFile(files)
+            } else {
+                alert("ERROR");
+            }
+        });
+    }
+
+    // /api/fileUpload ajax 실행 함수
+    function apiFileUpload(formData) {
+        $.ajax({
+            url: '/api/fileUpload',
+            type: 'post',
+            data: formData,
+            //enctype:'multipart/form-data',
+            contentType: false,
+            processData: false,
+            dataType: 'json',
+            cache: false,
+            success: function (response) {
+                //addThumbnail(response);
+
+                /* for(var i=0; i<response.files.length; i++) {
+                    socket.emit("File", {
+                        B_IDs: sessionStorage.getItem("_B_IDs"),
+                        CR_IDs : sessionStorage.getItem("_CR_IDs"),
+                        message : response.files[i].originalName,
+                        fileName : response.files[i].fileName
+                    });
+            
+                    onSend(response.files[i].originalName, "file", response.files[i].fileName );
+                } */
+
+                // uploadName 받아오기
+                //console.log(response.uploadNameList);
+                for (i = 0; i < response.uploadNameList.length; i++) {
+                    // uploadName 개수만큼 반복
+                    // uploadName 배열에 넣어주기.
+                    uploadName.push(response.uploadNameList[i]);
+                }
+                console.log("업로드 파일명 :");
+                console.log(uploadName);
+            }
+        });
+    }
+
+    // 선택한(또는 드롭한) 첨부 파일 리스트 만들기
+    function preview(file, idx) {
+        var reader = new FileReader();
+
+        // FileReadr는 Blob 데이터를 Data URL로 바꿔줄 수 있다.
+        // 이미지의 경로에 http URL이 아닌 이미지의 raw data를 base64로 인코딩한 문자열을 넣는다.
+
+        reader.onload = (function (f, idx) {
+            return function (e) {
+                var div = '<div class="file_index_ ' + idx + '">\
+                               <div class="close" data-idx="' + idx + '">✖</div>\
+                               <div class="file_name">' + f.name + '</div>\
+                               <div class="file_size">' + byteCalculation(attachFiles[idx].size) + '</div>\
+                               </div>';
+                $("#fileList").append(div);
+
+                totalFileSize += attachFiles[idx].size;
+                $("#totalCapacity").text(byteCalculation(totalFileSize));   // 업로드 파일 총 용량
+
+                $("#totalUpload").text(uploadCount());  // 업로드 파일수
+            };
+        })(file, idx);
+        reader.readAsDataURL(file);
+    }
+
+    // 파일 크기 계산
+    function byteCalculation(bytes) {
+
+        var bytes = parseInt(bytes);
+        var s = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        var e = Math.floor(Math.log(bytes) / Math.log(1024));
+
+        if (e == "-Infinity") {
+            return "0 " + s[0];
+        } else { }
+
+        return (bytes / Math.pow(1024, Math.floor(e))).toFixed(2) + " " + s[e];
+    }
+
+    // disable이 아닌(✖누르지 않은) 파일 
+    function uploadCount() {
+
+        var count = 0;
+
+        $.each(attachFiles, function (i, file) {
+            if (file.upload != 'disable') {
+                count += 1;
+
+            } else { }
+        });
+
+        return count + "개 업로드 완료";
+    }
+
+    // ✖ 클릭시 실행
+    $("#fileList").on("click", ".close", function (e) {
+
+        var $target = $(e.target);
+        var idx = $target.attr('data-idx');
+        var clickFileName = "";
+
+        attachFiles[idx].upload = 'disable';    // 삭제된 항목은 업로드하지 않기 위해 플래그 생성
+
+        totalFileSize -= attachFiles[idx].size; // 업로드 파일 총 용량
+        if (totalFileSize == 0) {
+            $("#totalCapacity").text('0KB');
+        } else {
+            $("#totalCapacity").text(byteCalculation(totalFileSize));
+        }
+
+        $("#totalUpload").text(uploadCount());  // 업로드 파일수
+
+        clickFileName = uploadName[idx];        // ✖ 클릭한 곳의 uploadName 담기 (ajax로 넘겨주기 위해)
+        uploadName[idx] = 'disable';
+
+        $target.parent().remove();              // 해당 요소 제거
+        console.log("첨부파일 정보 :");
+        console.log(attachFiles);
+        console.log("업로드 파일명 :");
+        console.log(uploadName);
+
+        var formData = new FormData();
+        formData.append('fileName', clickFileName);
+
+        // ajax로 upload 폴더 안에 파일도 삭제하기
+        $.ajax({
+            type: 'POST',
+            url: '/api/fileDelete',
+            data: formData,
+            dataType: "json",
+            contentType: false, // content-type 헤더가 multipart/form-data로 전송되게함
+            processData: false  // formData를 string으로 변환하지 않음
+            , success: function (response) {
+                //RefreshData();
+            }
+        });
+
+    });
+
+    // 전송 버튼 클릭시 실행
+    function SendMail() {
+        //alert('');
+
+        // 파일업로드는 2번째
+        // var formData = {
+        //     pFrom : $("#from").val(),       // 보낸 사람
+        //     pTo : $("#to").val(),           // 받는 사람
+        //     pCc : $("#cc").val(),           // 참조
+        //     pSubject : $("#subject").val(), // 제목
+        //     pHtmlText : editor.value        // 내용
+        // }
+
+
+        var formData = new FormData();
+
+        formData.append('pFrom', $("#from").dxTextBox('option', 'value'));
+
+        var toValue = $("#to").dxTextBox('option', 'value');
+        if (toValue.indexOf(", ") == -1) {
+
+            // 받는사람 한 명
+            console.log("받는사람 한 명");
+            formData.append('pTo', toValue);
+
+        } else {
+
+            // 받는사람 여러 명
+            console.log("받는사람 여러 명");
+            var toList = toValue.split(", ");
+
+            for (i = 0; i < toList.length; i++) {
+                formData.append('pTo', toList[i]);
+            }
+        }
+
+        var ccValue = $("#cc").dxTextBox('option', 'value');
+        if (ccValue.indexOf(", ") == -1) {
+
+            // 참조 한 명
+            console.log("참조 한 명");
+            formData.append('pCc', ccValue);
+
+        } else {
+
+            // 참조 여러 명
+            console.log("참조 여러 명");
+            var ccList = ccValue.split(", ");
+
+            for (i = 0; i < ccList.length; i++) {
+                formData.append('pCc', ccList[i]);
+            }
+        }
+        formData.append('pSubject', $("#subject").dxTextBox('option', 'value'));
+        formData.append('pHtmlText', editor.value);
+
+        $.each(attachFiles, function (i, file) {
+            if (file.upload != 'disable') {  // 삭제하지 않은 파일만 항목으로 추가
+                formData.append('pfiles', file);
+
+                var result = "";
+                result += i + ' : ' + file.name;
+                console.log(result);
+
+            } else { }
+        });
+
+
+        // uploadName도 삭제하지 않은 것만 보내자.
+        $.each(uploadName, function (i, item) {
+            if (item != 'disable') {
+                formData.append('pUploadName', item);
+                fileCount += 1;
+
+                var result = "";
+                result += i + ' : ' + item;
+                console.log(result);
+            } else { }
+        });
+
+        formData.append('pFileCount', fileCount);   // 보낼 파일 개수
+
+        // validation 없으면 ajax 실행하기
+        if ($("#summary").is(':empty')) {
+            console.log("summary 비어있음");
+            $.ajax({
+                type: 'POST',
+                url: '/api/sendMail',
+                data: formData,
+                //  + '?page=' + pages + '&rowCount=' + rowcounts,
+                dataType: "json",
+                contentType: false, // content-type 헤더가 multipart/form-data로 전송되게함
+                processData: false  // formData를 string으로 변환하지 않음
+                , success: function (response) {
+                    //RefreshData();
+                    fileCount = 0;
+
+                    console.log(response.result);
+
+                    if (response.result == 'success') {
+                        DevExpress.ui.notify("메일이 정상적으로 전송되었습니다.", "info", 2000);
+                    } else {
+                        DevExpress.ui.notify("메일을 보낼 수 없습니다.", "error", 2000);
+                    }
+                }
+            });
+        } else {
+            console.log("summary 내용있음");
+            DevExpress.ui.notify("내용을 제대로 입력해주세요.", "warning", 2000);
+        }
+    }
+
+</script>
+
+</html>

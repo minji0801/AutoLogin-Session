@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        * {
+            font-family: 'Jua', sans-serif;
+        }
+
+        .wrap {
+            visibility: hidden;
+            width: 300px;
+            margin: auto;
+            text-align: center;
+            padding: 20px;
+            border: 1px solid black;
+        }
+
+        .m-t-10 {
+            margin-top: 10px;
+        }
+
+        .m-t-20 {
+            margin-top: 20px;
+        }
+
+        input {
+            width: 300px;
+            height: 30px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            width: 300px;
+            height: 30px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .login {
+            background-color:lightgray;
+            border-radius: 0px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .naver-login-btn {
+            background-color: limegreen;
+            color: white;
+        }
+
+        .kakao-login-btn {
+            background-color: gold;
+            color: black;
+        }
+
+        .facebook-login-btn {
+            background-color: rgb(53, 96, 175);
+            color: white;
+        }
+
+        .google-login-btn {
+            background-color: rgb(209, 71, 71);
+            color: white;
+        }
+        .signup {
+            background-color:lightgray;
+        }
+    </style>
+    <script>
+        $(function () {
+            getSession();
+            
+        })
+
+        function getSession() {
+            $.ajax({
+                type: 'GET',
+                url: '/users/getSession',
+                success: function (response) {
+
+                    console.log(response.data);
+                    
+                    if (response.data == 'NO') {
+                        $('.wrap').css('visibility', 'visible');
+
+                    } else if (response.data == 'INCORRECT') {
+                        alert('사용자가 없습니다. 쿠키를 지워주세요.');;
+                        $('.wrap').css('visibility', 'visible');
+
+                    } else {
+                        // 메인으로 이동
+                        location.href='/welcome';
+                    }
+                }
+            });
+        }
+
+        function goSignUp() {
+            location.href = '/signup';
+        }
+
+        function naverLogin() {
+            location.href = '/users/naverlogin';
+        }
+
+        function kakaoLogin() {
+            location.href = '/users/kakaologin';
+        }
+
+        function facebookLogin() {
+            location.href = '/users/facebooklogin';
+        }
+
+        function googleLogin() {
+            location.href = '/users/googlelogin';
+        }
+    </script>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>LOGIN</h1>
+        <form action="/users/emaillogin" method="post">
+            <div>
+                <input type="text" name="email" placeholder="이메일"/>
+            </div>
+            <div class="m-t-10">
+                <input type="password" name="pw" placeholder="비밀번호"/>
+            </div>
+            <div class="m-t-10">
+                <input class="btn login" type="submit" value="로그인" />
+            </div>
+        </form>
+        <hr class="m-t-20">
+        <div class="m-t-10">
+            <button class="btn naver-login-btn" onclick="naverLogin()">네이버 로그인</button>
+        </div>
+        <div class="m-t-10">
+            <button class="btn kakao-login-btn" onclick="kakaoLogin()">카카오 로그인</button>
+        </div>
+        <div class="m-t-10">
+            <button class="btn facebook-login-btn" onclick="facebookLogin()">페이스북 로그인</button>
+        </div>
+        <div class="m-t-10">
+            <button class="btn google-login-btn" onclick="googleLogin()">구글 로그인</button>
+        </div>
+        <hr class="m-t-20">
+        <div class="m-t-20">
+            <button class="btn signup" onclick="goSignUp()">회원가입</button>
+        </div>
+    </div>
+</body>
+
+</html>
