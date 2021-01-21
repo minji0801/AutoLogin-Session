@@ -44,7 +44,7 @@
         }
 
         .login {
-            background-color:lightgray;
+            background-color: lightgray;
             border-radius: 0px;
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -70,34 +70,38 @@
             background-color: rgb(209, 71, 71);
             color: white;
         }
+
         .signup {
-            background-color:lightgray;
+            background-color: lightgray;
         }
     </style>
     <script>
+
         $(function () {
+
             getSession();
-            
+
         })
 
         function getSession() {
+
             $.ajax({
                 type: 'GET',
                 url: '/users/getSession',
                 success: function (response) {
 
                     console.log(response.data);
-                    
+
                     if (response.data == 'NO') {
+
+                        // 로그인창 보여주기
                         $('.wrap').css('visibility', 'visible');
 
-                    } else if (response.data == 'INCORRECT') {
-                        alert('사용자가 없습니다. 쿠키를 지워주세요.');;
-                        $('.wrap').css('visibility', 'visible');
+                    } else if (response.data == 'OK') {
 
-                    } else {
                         // 메인으로 이동
-                        location.href='/welcome';
+                        location.href = '/welcome';
+
                     }
                 }
             });
@@ -130,10 +134,10 @@
         <h1>LOGIN</h1>
         <form action="/users/emaillogin" method="post">
             <div>
-                <input type="text" name="email" placeholder="이메일"/>
+                <input type="text" name="email" placeholder="이메일" />
             </div>
             <div class="m-t-10">
-                <input type="password" name="pw" placeholder="비밀번호"/>
+                <input type="password" name="pw" placeholder="비밀번호" />
             </div>
             <div class="m-t-10">
                 <input class="btn login" type="submit" value="로그인" />

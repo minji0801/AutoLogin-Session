@@ -26,11 +26,16 @@ app.use(cors());
 
 /* 세션쿠키 생성 */
 app.use(cookieParser());
+
+var fileStoreOptions = {
+  reapInterval: -1
+};
+
 app.use(session({
   secret: 'keyboard cat',
   resave: false,
   saveUninitialized: true,
-  store: new FileStore(),
+  store: new FileStore(fileStoreOptions),
   cookie: {
     httpOnly: true,
     secure: false

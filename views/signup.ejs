@@ -59,10 +59,15 @@
                     console.log(response.data);
 
                     if (response.data == 'NO') {
+
                         alert('이미 가입한 사용자입니다.');
-                    } else {
-                        // 바로 메인으로
-                        location.href = '/welcome';
+
+                    } else if (response.data == 'OK') {
+
+                        var id = response.id;
+
+                        // 로그인하러
+                        location.href = '/login';
                     }
                 }
             });

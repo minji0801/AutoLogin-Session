@@ -46,6 +46,7 @@
         }
     </style>
     <script>
+
         $(function() {
             getName();
         })
@@ -57,19 +58,7 @@
                 dataType: 'json',
                 success: function (response) {
 
-                    console.log(response.data);
-
-                    if (response.data == 'NO') {
-                        alert('로그인해주세요.');
-                        location.href='/login';
-
-                    } else if (response.data == 'INCORRECT') {
-                        alert('사용자가 없습니다. 쿠키를 지워주세요.');
-
-                    } else if (response.data == 'OK') {
-                        $('#name').text(response.name);
-
-                    } 
+                    $('#name').text(response.data);
                 }
             });
         }
