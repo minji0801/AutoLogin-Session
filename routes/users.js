@@ -2,53 +2,12 @@ var express = require('express');
 var router = express.Router();
 
 /* 추가한 부분 */
-var app = express();
-const session = require('express-session');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const passport = require('passport')
-    , LocalStrategy = require('passport-local').Strategy
-    , NaverStrategy = require('passport-naver').Strategy
-    , KakaoStrategy = require('passport-kakao').Strategy
-    , FacebookStrategy = require('passport-facebook').Strategy
-    , GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
-/* 여기까지 */
-
-const mssql = require('mssql');
-const multer = require('multer');
-const path = require('path');
-/* GET home page. */
-
-const nodemailer = require("nodemailer");
-
-const fs = require('fs');
-const emlformat = require('eml-format');
-
-
-const jsdom = require('jsdom');
-const { JSDOM } = jsdom;
-
-// var DomParser = require('dom-parser');
-
-
-const config = {
-    // "user"      : "sa",
-    // "password"  : "qw12qw12)",
-    // "server"    : "192.168.0.122",
-    // "port"      : 1433,
-    // "database"  : "aTEST",
-    // "timezone"  : 'utc',
-    // "options"   : {
-    //     "encrypt" : false
-    // }
+var config = {
     // "user": "test",
     "user": "sa",
     "password": "qw12qw12",
-    //"server": "192.168.137.1",
     "server": "192.168.0.134",
     // "server": "192.168.35.17",
-    //"server"    : "192.168.0.135",
     "port": 1433,
     "database": "aTEST",
     // "timezone"  : 'utc',
@@ -58,41 +17,55 @@ const config = {
     }
 }
 
+var fs = require('fs');
+var mssql = require('mssql');
+var cookieParser = require('cookie-parser');
+var NodeDeviceDetector = require('node-device-detector');
+var DeviceDetector = require('device-detector-js');
+var passport = require('passport')
+    , LocalStrategy = require('passport-local').Strategy
+    , NaverStrategy = require('passport-naver').Strategy
+    , KakaoStrategy = require('passport-kakao').Strategy
+    , FacebookStrategy = require('passport-facebook').Strategy
+    , GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+/* 여기까지 */
 
-/* configuration */
-app.use(cors());
-router.use(bodyParser.json());
-router.use(bodyParser.urlencoded({ extended: false }));
+
 router.use(cookieParser());
-
-
-/* passport와 flash는 반드시 session 다음에 */
 router.use(passport.initialize());
 router.use(passport.session());
 
 
-// 로그인이 성공하면 serializerUser로 user정보를 세션에 저장
+// passport 인증 성공하여 user 객체 반환하면 실행
+// 세션에 user정보 저장 ("passport"~ 부분이 추가됨)
+// (세션에 "passport":{}가 이미 있다면 그 안에"user"~ 부분이 추가됨)
 passport.serializeUser(function (user, done) {
-    console.log("serializeUser ", user)
+
+    console.log("serializeUser : ", user)
+
     done(null, user);
 });
 
-// Node.js의 모든 페이지에 접근할때, 로그인이 되어있을 경우
-// deserializeUser로 session에 저장된 값을 이용 
+// Node.js의 모든 페이지에 접근할때, 로그인이 되어있을 경우 실행
+// 세션에 저장된 사용자 정보를 읽어옴
+// ("passport"~ 부분이 있으면 로그인된 것으로 봄) 
 passport.deserializeUser(function (user, done) {
+
     console.log("deserializeUser user ", user)
-    done(null, user);   // 이 값은 req.user에 저장됨
+
+    done(null, user);   // req.user로 user 전달
 });
 
 
-// 사용자 회원가입(이메일가입)
+// 사용자 회원가입(이메일 회원가입)
 router.post('/signup', function (req, res, next) {
     try {
-        console.log('api/signup!!');
+        console.log('signup!!');
         console.log(req.body.name);
         console.log(req.body.email);
         console.log(req.body.pw);
 
+        var sessionID = req.sessionID;
         var id = Math.random().toString(36).slice(2);
         var email = req.body.email;
         var pw = req.body.pw;
@@ -105,7 +78,9 @@ router.post('/signup', function (req, res, next) {
 
             var checkEmail = "SELECT * FROM tALU WHERE email = '" + email + "'";
             var insertData = "INSERT INTO tALU VALUES ('" + id + "', '" + email + "', '" + pw + "', '" + name + "', 'email');";
+            var getData = "SELECT * FROM tALU WHERE id = '" + id + "'";
 
+            // 이메일 중복 확인
             request.query(checkEmail, function (err, result) {
 
                 if (result.rowsAffected[0] == 0) {
@@ -114,7 +89,40 @@ router.post('/signup', function (req, res, next) {
                     request.query(insertData, function (err, result) {
 
                         console.log('이메일 중복없음!');
-                        res.json({ data: 'OK', id: id });
+
+                        // INSERT한 사용자 데이터 가져와서 세션에 넣기
+                        request.query(getData, function (err, result) {
+
+                            var data = JSON.stringify(result.recordset[0]);
+                            console.log(data);
+      
+                            // 현재 세션파일 내용 가져오기
+                            var s_file = fs.readFileSync('sessions/' + sessionID + '.json');
+                            var s_fileToJson = JSON.parse(s_file);
+                            var s_jsonToString = JSON.stringify(s_fileToJson);
+
+                            // 두 내용 붙이기
+                            var str = s_jsonToString.substr(0, s_jsonToString.length-1);
+                            str = str + ',"passport":{"user":' + data + '}}';
+                            console.log('str : ', str);
+
+                            // 현재세션파일에 내용 덮어쓰기
+                            var file = 'sessions/' + sessionID + '.json';
+                            fs.writeFile(file, str, function(err) {
+                                if (err) {
+                                    console.log(err);
+                                } else {
+                                    console.log('세션파일을 덮어썼습니다!!');
+
+                                    // user_session 쿠키 생성
+                                    res.cookie('user_session', sessionID, {
+                                        maxAge: 31536000000 // 1년
+                                    });
+        
+                                    res.json({ data: 'OK'});
+                                }
+                            });
+                        })
                     })
                 } else {
 
@@ -130,24 +138,26 @@ router.post('/signup', function (req, res, next) {
     }
 });
 
-// passport - username & password
+// passport - local(아이디,비밀번호)
 passport.use(new LocalStrategy({
     usernameField: 'email',
     passwordField: 'pw'
 },
     function (username, password, done) {
-        console.log('passport-local!!');
+
         try {
+            console.log('passport-local!!');
+
             mssql.connect(config, function (err) {
 
                 console.log('Connect');
                 var request = new mssql.Request();
 
-                var queryString = "SELECT * FROM tALU WHERE email = '" + username + "' AND pw = '" + password + "'";
+                var checkUser = "SELECT * FROM tALU WHERE email = '" + username + "' AND pw = '" + password + "'";
 
-                request.query(queryString, function (err, result) {
+                // 이메일, 비밀번호 확인
+                request.query(checkUser, function (err, result) {
 
-                    // 이메일, 비밀번호 확인
                     if (result.rowsAffected[0] === 0) {
 
                         // DB에 없음
@@ -174,29 +184,32 @@ passport.use(new LocalStrategy({
 // 이메일로그인
 router.post('/emaillogin', function (req, res, next) {
     passport.authenticate('local', function (err, user, info) {
+
         console.log('passport-local callback!');
 
         if (!user) {
 
             // user 없음
             return res.redirect('/login');
-        }
 
-        // user 있음
-        req.logIn(user, function (err) {
+        } else {
 
-            req.session.save(function () {
-
-                console.log('emaillogin/callback user : ', req.user);
-
-                // user_session 쿠키 생성
-                res.cookie("user_session", req.sessionID, {
-                    maxAge: 31536000000 // 1년
+            // user 있음
+            req.logIn(user, function (err) {
+    
+                req.session.save(function () {
+    
+                    console.log('emaillogin/callback user : ', user);
+    
+                    // user_session 쿠키 생성
+                    res.cookie("user_session", req.sessionID, {
+                        maxAge: 31536000000 // 1년
+                    });
+    
+                    return res.redirect('/welcome');
                 });
-
-                return res.redirect('/welcome');
             });
-        });
+        }
     })(req, res, next);
 });
 
@@ -207,6 +220,7 @@ passport.use(new NaverStrategy({
     callbackURL: 'http://192.168.0.134:8087/users/naverlogin/callback'
 },
     function (accessToken, refreshToken, profile, done) {
+
         try {
             console.log('passport-naver!!');
             console.log('naver-login-profile : ', profile);
@@ -229,6 +243,7 @@ passport.use(new NaverStrategy({
                 var checkUser = "SELECT * FROM tALU WHERE id = '" + user.id + "' AND provider = '" + user.provider + "'";
                 var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '" + user.email + "', '" + user.pw + "', '" + user.name + "', '" + user.provider + "')";
 
+                // 사용자 확인
                 request.query(checkUser, function (err, result) {
 
                     if (result.rowsAffected[0] == 0) {
@@ -297,6 +312,7 @@ passport.use(new KakaoStrategy({
     callbackURL: 'http://192.168.0.134:8087/users/kakaologin/callback',
 },
     function (accessToken, refreshToken, profile, done) {
+
         try {
             console.log('passport-kakao!!');
             console.log('kakao-login-profile : ', profile);
@@ -321,6 +337,7 @@ passport.use(new KakaoStrategy({
                 var checkUser = "SELECT * FROM tALU WHERE id = '" + user.id + "' AND provider = '" + user.provider + "'";
                 var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '" + user.email + "', '" + user.pw + "', '" + user.name + "', '" + user.provider + "')";
 
+                // 사용자 확인
                 request.query(checkUser, function (err, result) {
 
                     if (result.rowsAffected[0] == 0) {
@@ -412,6 +429,7 @@ passport.use(new FacebookStrategy({
                 var checkUser = "SELECT * FROM tALU WHERE id = '" + user.id + "' AND provider = '" + user.provider + "'";
                 var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '" + user.email + "', '" + user.pw + "', '" + user.name + "', '" + user.provider + "')";
 
+                // 사용자 확인
                 request.query(checkUser, function (err, result) {
 
                     if (result.rowsAffected[0] == 0) {
@@ -506,6 +524,7 @@ passport.use(new GoogleStrategy({
                 var checkUser = "SELECT * FROM tALU WHERE id = '" + user.id + "' AND provider = '" + user.provider + "'";
                 var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '" + user.email + "', '" + user.pw + "', '" + user.name + "', '" + user.provider + "')";
 
+                // 사용자 확인
                 request.query(checkUser, function (err, result) {
 
                     if (result.rowsAffected[0] == 0) {
@@ -574,25 +593,43 @@ router.get('/googlelogin/callback', function (req, res, next) {
 // 로그아웃
 router.post('/logout', function (req, res, next) {
 
-    // user_session 쿠키 삭제
-    res.clearCookie('user_session');
+    try {
 
-    // 셔센 파일 삭제
-    var file = 'sessions/' + req.sessionID + '.json';
-    fs.unlink(file, function (err) {
-        if (err) {
-            console.log(err);
-        } else {
-            console.log('세션파일을 삭제했습니다!!');
-            res.redirect('/login');
-        }
-    })
+        // user_session 쿠키 삭제
+        res.clearCookie('user_session');
+
+        // 현재 세센 파일 삭제
+        var file = 'sessions/' + req.sessionID + '.json';
+        fs.unlink(file, function (err) {
+            if (err) {
+                console.log(err);
+            } else {
+                console.log('세션파일을 삭제했습니다!!');
+                res.redirect('/login');
+            }
+        })
+
+    } catch (err) {
+        console.log(err);
+    }
+
 });
 
-// 세션확인
+// 쿠키, 세션확인
 router.get('/getSession', function (req, res, next) {
 
     try {
+
+        console.log('req.headers["user-agent"] : ', req.headers['user-agent']);
+
+        var userAgent = req.headers['user-agent'];
+
+        var node_device_detector = new NodeDeviceDetector().detect(userAgent);
+        console.log('node-device-detector : ', node_device_detector);
+
+        var device_detector = new DeviceDetector().parse(userAgent);
+        console.log('device-detector : ', device_detector)
+
 
         var sessionID = req.sessionID;
 
@@ -624,7 +661,7 @@ router.get('/getSession', function (req, res, next) {
             } else {
 
                 // 다름
-                // 1-2-2. 세션내용 옮기고 파일삭제 후 메인으로 이동(자동로그인)
+                // 1-2-2. 세션내용(passport부분) 옮기고 예전 세션 파일삭제 후 메인으로 이동(자동로그인)
                 console.log('세션ID 다름!!');
 
                 // sessions 폴더에 user_session가 파일명인 파일 내용 가져와서 passport 부분만 잘라오기
@@ -652,7 +689,7 @@ router.get('/getSession', function (req, res, next) {
                     }
                 });
 
-                // 쿠키셔센 파일 삭제
+                // 쿠키세센 파일 삭제
                 var file = 'sessions/' + user_session + '.json';
                 fs.unlink(file, function (err) {
                     if (err) {
@@ -662,7 +699,7 @@ router.get('/getSession', function (req, res, next) {
                     }
                 })
 
-                // 쿠키삭제하고 현재세션ID로 쿠키 생성
+                // 현재세션ID로 쿠키 생성
                 res.cookie('user_session', sessionID, {
                     maxAge: 31536000000 // 1년
                 });
@@ -678,11 +715,20 @@ router.get('/getSession', function (req, res, next) {
 router.get('/getName', function (req, res, next) {
 
     try {
-
         console.log('sessionID : ', req.sessionID);
+        console.log('req.user : ', req.user);
 
-        data = req.user.name;
-        res.json({ data: data });
+        if (req.user == undefined) {
+
+            res.json({data: 'NO'});
+
+        } else {
+
+            // passport.deserializeUser 에서 반환한 내용을 
+            // req.user에서 접근할 수 있다.
+            name = req.user.name;
+            res.json({ data: 'OK', name: name });
+        }
 
     } catch (err) {
         console.log(err);

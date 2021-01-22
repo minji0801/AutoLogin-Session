@@ -79,9 +79,20 @@
 
         $(function () {
 
+            // 브라우저 정보 확인
+            //getBrowserInfo();
+
+            // 로그인 화면 접속하자마자 쿠키, 세션확인하기
             getSession();
 
         })
+
+        function getBrowserInfo() {
+
+            var userAgent = navigator.userAgent;
+            console.log('브라우저 정보 : ', userAgent);
+
+        }
 
         function getSession() {
 

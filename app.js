@@ -6,7 +6,6 @@ var fs = require('fs');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var cors = require('cors');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -22,7 +21,6 @@ const options = {
 
 var app = express();
 
-app.use(cors());
 
 /* 세션쿠키 생성 */
 app.use(cookieParser());
@@ -37,8 +35,8 @@ app.use(session({
   saveUninitialized: true,
   store: new FileStore(fileStoreOptions),
   cookie: {
-    httpOnly: true,
-    secure: false
+    httpOnly: true, // 자바스크립트의 document.cookie를 이용해서 쿠키에 접속을 막는 옵션
+    secure: false   // https로 통신하는 경우만 전송하는 옵션
   }
 }))
 

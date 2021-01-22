@@ -58,7 +58,15 @@
                 dataType: 'json',
                 success: function (response) {
 
-                    $('#name').text(response.data);
+                    if (response.data == 'NO') {
+
+                        alert('로그인해주세요.');
+                        location.href = '/login';
+                        
+                    } else if (response.data == 'OK') {
+
+                        $('#name').text(response.name);
+                    }
                 }
             });
         }
