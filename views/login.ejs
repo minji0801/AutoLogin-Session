@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="/javascripts/device-uuid.js" type="text/javascript"></script>
     <style>
         * {
             font-family: 'Jua', sans-serif;
@@ -79,19 +80,52 @@
 
         $(function () {
 
-            // 브라우저 정보 확인
-            //getBrowserInfo();
+            getBrowserInfo();
+
+            // 디바이스 uuid 가져오기
+            getDeviceUUID();
 
             // 로그인 화면 접속하자마자 쿠키, 세션확인하기
             getSession();
 
+            // mssql session 확인하기
+            getSessionMssql();
+
+        })
+
+        $(window).bind("beforeunload", function() {
+
+            $.ajax({
+                type: 'POST',
+                url: '/users/close',
+                cache: 'false',
+                async: 'false',
+                success: function (response) {
+
+                }
+            });
         })
 
         function getBrowserInfo() {
 
-            var userAgent = navigator.userAgent;
-            console.log('브라우저 정보 : ', userAgent);
+            var agent = navigator.userAgent;
+            console.log('Brwoser Info : ', agent);
 
+        }
+
+        function getDeviceUUID() {
+
+            var uuid = new DeviceUUID().get();
+            console.log('Device UUID : ', uuid);
+
+            $.ajax({
+                type: 'GET',
+                url: '/users/getUUID',
+                data: {uuid: uuid},
+                success: function (response) {
+
+                }
+            });
         }
 
         function getSession() {
@@ -117,6 +151,17 @@
                 }
             });
         }
+
+            function getSessionMssql() {
+
+                $.ajax({
+                    type: 'GET',
+                    url: '/users/getSessionMssql',
+                    success: function (response) {
+
+                    }
+                });
+            }
 
         function goSignUp() {
             location.href = '/signup';

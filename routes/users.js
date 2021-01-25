@@ -22,12 +22,15 @@ var mssql = require('mssql');
 var cookieParser = require('cookie-parser');
 var NodeDeviceDetector = require('node-device-detector');
 var DeviceDetector = require('device-detector-js');
+var macaddress = require('node-macaddress');
+var getmac = require('getmac');
 var passport = require('passport')
     , LocalStrategy = require('passport-local').Strategy
     , NaverStrategy = require('passport-naver').Strategy
     , KakaoStrategy = require('passport-kakao').Strategy
     , FacebookStrategy = require('passport-facebook').Strategy
     , GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+const { default: getMAC } = require('getmac');
 /* 여기까지 */
 
 
@@ -185,30 +188,49 @@ passport.use(new LocalStrategy({
 router.post('/emaillogin', function (req, res, next) {
     passport.authenticate('local', function (err, user, info) {
 
-        console.log('passport-local callback!');
+        try {
+            console.log('passport-local callback!');
 
-        if (!user) {
-
-            // user 없음
-            return res.redirect('/login');
-
-        } else {
-
-            // user 있음
-            req.logIn(user, function (err) {
+            if (!user) {
     
-                req.session.save(function () {
+                // user 없음
+                return res.redirect('/login');
     
-                    console.log('emaillogin/callback user : ', user);
+            } else {
     
-                    // user_session 쿠키 생성
-                    res.cookie("user_session", req.sessionID, {
-                        maxAge: 31536000000 // 1년
+                // user 있음
+                req.logIn(user, function (err) {
+        
+                    req.session.save(function () {
+        
+                        //console.log('emaillogin/callback user : ', user);
+    
+                        console.log('req.sessionId : ', req.sessionID);
+                        console.log('req.session : ', JSON.stringify(req.session));
+    
+                        mssql.connect(config, function (err) {
+                
+                            console.log('Connect');
+                            var request = new mssql.Request();
+            
+                            var insertSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+
+                            request.query(insertSession, function (err, result) {
+
+                                // user_session 쿠키 생성
+                                res.cookie("user_session", req.sessionID, {
+                                    maxAge: 31536000000 // 1년
+                                });
+
+                                return res.redirect('/welcome');
+                            })
+                        });
                     });
-    
-                    return res.redirect('/welcome');
                 });
-            });
+            }
+        }
+        catch (err) {
+            console.log(err);
         }
     })(req, res, next);
 });
@@ -598,16 +620,28 @@ router.post('/logout', function (req, res, next) {
         // user_session 쿠키 삭제
         res.clearCookie('user_session');
 
-        // 현재 세센 파일 삭제
-        var file = 'sessions/' + req.sessionID + '.json';
-        fs.unlink(file, function (err) {
-            if (err) {
-                console.log(err);
-            } else {
-                console.log('세션파일을 삭제했습니다!!');
-                res.redirect('/login');
-            }
-        })
+        // mssql에서 세션 삭제
+        mssql.connect(config, function (err) {
+                
+            console.log('Connect');
+            var request = new mssql.Request();
+
+            var deleteSession = "DELETE FROM session WHERE sessionId = '" + req.sessionID + "'";
+
+            request.query(deleteSession, function (err, result) {
+
+                // 현재 세센 파일 삭제
+                var file = 'sessions/' + req.sessionID + '.json';
+                fs.unlink(file, function (err) {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        console.log('세션파일을 삭제했습니다!!');
+                        res.redirect('/login');
+                    }
+                })
+            })
+        });
 
     } catch (err) {
         console.log(err);
@@ -619,6 +653,10 @@ router.post('/logout', function (req, res, next) {
 router.get('/getSession', function (req, res, next) {
 
     try {
+
+        //console.log('getMac : ', getmac.default());
+
+        console.log(JSON.stringify(macaddress.networkInterfaces(), null, 5));
 
         console.log('req.headers["user-agent"] : ', req.headers['user-agent']);
 
@@ -711,6 +749,38 @@ router.get('/getSession', function (req, res, next) {
     }
 });
 
+// mssql에서 세션 확인해서 변경하기
+router.get('/getSessionMssql', function (req, res, next) {
+
+    try {
+
+        // 1. mssql에서 쿠키에 담긴 세션id 찾기
+        var user_session = req.cookies.user_session;
+
+        mssql.connect(config, function (err) {
+                
+            console.log('Connect');
+            var request = new mssql.Request();
+
+            var findSession = "SELECT sessionData FROM session WHERE sessionId = '" + user_session + "'";
+
+            request.query(findSession, function (err, result) {
+
+                console.log('sessionData : ', result.recordset[0].sessionData); // mssql에서 조회한 sessionData
+
+                // sessionData에서 passport 부분을 잘라온다.
+                // 지금 세션값이랑 합친다.
+                // 지금 세션에 합친 내용 넣기
+                // mssql에 지금 세션 정보 insert
+                // 메인으로 이동
+            })
+        });
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
+
 // 로그인한 사용자 이름 가져오기
 router.get('/getName', function (req, res, next) {
 
@@ -734,6 +804,17 @@ router.get('/getName', function (req, res, next) {
         console.log(err);
     }
 });
+
+router.post('/close', function (req, res, next) {
+
+    console.log('창닫음!!');
+})
+
+router.get('/getUUID', function (req, res, next) {
+
+    console.log('getUUID!!');
+    console.log('uuid : ', req.query.uuid);
+})
 
 /* GET users listing. */
 router.get('/', function (req, res, next) {
