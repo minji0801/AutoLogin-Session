@@ -1,7 +1,7 @@
 var createError = require('http-errors');
 var express = require('express');
 var session = require('express-session'); // 추가
-var FileStore = require('session-file-store')(session)  // 추가
+//var FileStore = require('session-file-store')(session)
 var fs = require('fs');
 var path = require('path');
 var cookieParser = require('cookie-parser');
@@ -25,18 +25,18 @@ var app = express();
 /* 세션쿠키 생성 */
 app.use(cookieParser());
 
-var fileStoreOptions = {
+/* var fileStoreOptions = {
   reapInterval: -1
-};
+}; */
 
 app.use(session({
   secret: 'keyboard cat',
-  resave: false,
-  saveUninitialized: true,
-  store: new FileStore(fileStoreOptions),
+  resave: false,            // true : 서버에 접속할 때마다 세션id 재발급(새로고침할때마다)
+  saveUninitialized: true,  // true : 세션 사용하기 전까지 세션id 발급X
+  //store: new FileStore(fileStoreOptions),
   cookie: {
-    httpOnly: true, // 자바스크립트의 document.cookie를 이용해서 쿠키에 접속을 막는 옵션
-    secure: false   // https로 통신하는 경우만 전송하는 옵션
+    httpOnly: true,         // 자바스크립트의 document.cookie를 이용해서 쿠키에 접속을 막는 옵션
+    secure: true            // https로 통신하는 경우만 전송하는 옵션
   }
 }))
 

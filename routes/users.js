@@ -97,21 +97,42 @@ router.post('/signup', function (req, res, next) {
                         request.query(getData, function (err, result) {
 
                             var data = JSON.stringify(result.recordset[0]);
-                            console.log(data);
-      
+                            
+                            console.log('"user"~ : ', '{"user":' + data + '}');
+                            var user = '{"user":' + data + '}';
+
+                            var obj = JSON.parse(user);
+
+                            console.log('지금세션(전) : ', req.session);
+                            req.session.passport = obj;
+                            console.log('지금세션(후) : ', req.session);
+
+                            // mssql에서 지금 세션 정보 insert
+                            var insertNewSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+                            request.query(insertNewSession, function (err, result) {
+
+                                // 현재세션ID로 쿠키 생성
+                                res.cookie('user_session', req.sessionID, {
+                                    httpOnly: true,
+                                    secure: true,
+                                    maxAge: 31536000000 // 1년
+                                });
+                                res.json({ data: 'OK' });
+                            })
+                            /* // FileStore 였을 때
                             // 현재 세션파일 내용 가져오기
                             var s_file = fs.readFileSync('sessions/' + sessionID + '.json');
                             var s_fileToJson = JSON.parse(s_file);
                             var s_jsonToString = JSON.stringify(s_fileToJson);
 
                             // 두 내용 붙이기
-                            var str = s_jsonToString.substr(0, s_jsonToString.length-1);
+                            var str = s_jsonToString.substr(0, s_jsonToString.length - 1);
                             str = str + ',"passport":{"user":' + data + '}}';
                             console.log('str : ', str);
 
                             // 현재세션파일에 내용 덮어쓰기
                             var file = 'sessions/' + sessionID + '.json';
-                            fs.writeFile(file, str, function(err) {
+                            fs.writeFile(file, str, function (err) {
                                 if (err) {
                                     console.log(err);
                                 } else {
@@ -121,10 +142,10 @@ router.post('/signup', function (req, res, next) {
                                     res.cookie('user_session', sessionID, {
                                         maxAge: 31536000000 // 1년
                                     });
-        
-                                    res.json({ data: 'OK'});
+
+                                    res.json({ data: 'OK' });
                                 }
-                            });
+                            }); */
                         })
                     })
                 } else {
@@ -192,37 +213,41 @@ router.post('/emaillogin', function (req, res, next) {
             console.log('passport-local callback!');
 
             if (!user) {
-    
+
                 // user 없음
-                return res.redirect('/login');
-    
+                console.log('아이디 또는 비밀번호가 일치하지 않습니다.');
+                
+                return res.json({data:'NO'});
+
             } else {
-    
+
                 // user 있음
                 req.logIn(user, function (err) {
-        
+
                     req.session.save(function () {
-        
+
                         //console.log('emaillogin/callback user : ', user);
-    
+
                         console.log('req.sessionId : ', req.sessionID);
                         console.log('req.session : ', JSON.stringify(req.session));
-    
+
                         mssql.connect(config, function (err) {
-                
+
                             console.log('Connect');
                             var request = new mssql.Request();
-            
+
                             var insertSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
 
                             request.query(insertSession, function (err, result) {
 
                                 // user_session 쿠키 생성
                                 res.cookie("user_session", req.sessionID, {
+                                    httpOnly: true,
+                                    secure: true,
                                     maxAge: 31536000000 // 1년
                                 });
 
-                                return res.redirect('/welcome');
+                                return res.json({data:'OK'});
                             })
                         });
                     });
@@ -239,7 +264,7 @@ router.post('/emaillogin', function (req, res, next) {
 passport.use(new NaverStrategy({
     clientID: 'jKCn5fyjj_lrGShea38E',
     clientSecret: 'gc3RUBRg5R',
-    callbackURL: 'http://192.168.0.134:8087/users/naverlogin/callback'
+    callbackURL: 'https://192.168.0.134:443/users/naverlogin/callback'
 },
     function (accessToken, refreshToken, profile, done) {
 
@@ -314,14 +339,30 @@ router.get('/naverlogin/callback', function (req, res, next) {
 
                 req.session.save(function () {
 
-                    console.log('naverlogin/callback user : ', user);
+                    // console.log('naverlogin/callback user : ', user);
 
-                    // user_session 쿠키 생성
-                    res.cookie("user_session", req.sessionID, {
-                        maxAge: 31536000000 // 1년
+                    console.log('req.sessionId : ', req.sessionID);
+                    console.log('req.session : ', JSON.stringify(req.session));
+
+                    mssql.connect(config, function (err) {
+
+                        console.log('Connect');
+                        var request = new mssql.Request();
+
+                        var insertSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+
+                        request.query(insertSession, function (err, result) {
+
+                            // user_session 쿠키 생성
+                            res.cookie("user_session", req.sessionID, {
+                                httpOnly: true,
+                                secure: true,
+                                maxAge: 31536000000 // 1년
+                            });
+
+                            return res.redirect('/welcome');
+                        })
                     });
-
-                    return res.redirect('/welcome');
                 });
             });
         }
@@ -331,7 +372,7 @@ router.get('/naverlogin/callback', function (req, res, next) {
 // passport-kakao
 passport.use(new KakaoStrategy({
     clientID: 'f4a7066d8d575a30efc4bedb0796989d',
-    callbackURL: 'http://192.168.0.134:8087/users/kakaologin/callback',
+    callbackURL: 'https://192.168.0.134:443/users/kakaologin/callback',
 },
     function (accessToken, refreshToken, profile, done) {
 
@@ -408,14 +449,30 @@ router.get('/kakaologin/callback', function (req, res, next) {
 
                 req.session.save(function () {
 
-                    console.log('kakaologin/callback user : ', user);
+                    // console.log('kakaologin/callback user : ', user);
 
-                    // user_session 쿠키 생성
-                    res.cookie("user_session", req.sessionID, {
-                        maxAge: 31536000000 // 1년
+                    console.log('req.sessionId : ', req.sessionID);
+                    console.log('req.session : ', JSON.stringify(req.session));
+
+                    mssql.connect(config, function (err) {
+
+                        console.log('Connect');
+                        var request = new mssql.Request();
+
+                        var insertSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+
+                        request.query(insertSession, function (err, result) {
+
+                            // user_session 쿠키 생성
+                            res.cookie("user_session", req.sessionID, {
+                                httpOnly: true,
+                                secure: true,
+                                maxAge: 31536000000 // 1년
+                            });
+
+                            return res.redirect('/welcome');
+                        })
                     });
-
-                    return res.redirect('/welcome');
                 });
             });
         }
@@ -503,14 +560,30 @@ router.get('/facebooklogin/callback', function (req, res, next) {
 
                 req.session.save(function () {
 
-                    console.log('facebooklogin/callback user : ', user);
+                    // console.log('facebooklogin/callback user : ', user);
 
-                    // user_session 쿠키 생성
-                    res.cookie("user_session", req.sessionID, {
-                        maxAge: 31536000000 // 1년
+                    console.log('req.sessionId : ', req.sessionID);
+                    console.log('req.session : ', JSON.stringify(req.session));
+
+                    mssql.connect(config, function (err) {
+
+                        console.log('Connect');
+                        var request = new mssql.Request();
+
+                        var insertSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+
+                        request.query(insertSession, function (err, result) {
+
+                            // user_session 쿠키 생성
+                            res.cookie("user_session", req.sessionID, {
+                                httpOnly: true,
+                                secure: true,
+                                maxAge: 31536000000 // 1년
+                            });
+
+                            return res.redirect('/welcome');
+                        })
                     });
-
-                    return res.redirect('/welcome');
                 });
             });
         }
@@ -521,7 +594,7 @@ router.get('/facebooklogin/callback', function (req, res, next) {
 passport.use(new GoogleStrategy({
     clientID: '706426410759-v8mjqnsi67efdprf0qsg6pm78ckjt7ie.apps.googleusercontent.com',
     clientSecret: 'QxHrFf2R2sxV7JPP3hmEf0B_',
-    callbackURL: "http://localhost:8087/users/googlelogin/callback"
+    callbackURL: "https://localhost:443/users/googlelogin/callback"
 },
     function (accessToken, refreshToken, profile, done) {
 
@@ -598,14 +671,30 @@ router.get('/googlelogin/callback', function (req, res, next) {
 
                 req.session.save(function () {
 
-                    console.log('googlelogin/callback user : ', user);
+                    // console.log('googlelogin/callback user : ', user);
 
-                    // user_session 쿠키 생성
-                    res.cookie("user_session", req.sessionID, {
-                        maxAge: 31536000000 // 1년
+                    console.log('req.sessionId : ', req.sessionID);
+                    console.log('req.session : ', JSON.stringify(req.session));
+
+                    mssql.connect(config, function (err) {
+
+                        console.log('Connect');
+                        var request = new mssql.Request();
+
+                        var insertSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+
+                        request.query(insertSession, function (err, result) {
+
+                            // user_session 쿠키 생성
+                            res.cookie("user_session", req.sessionID, {
+                                httpOnly: true,
+                                secure: true,
+                                maxAge: 31536000000 // 1년
+                            });
+
+                            return res.redirect('/welcome');
+                        })
                     });
-
-                    return res.redirect('/welcome');
                 });
             });
         }
@@ -622,7 +711,7 @@ router.post('/logout', function (req, res, next) {
 
         // mssql에서 세션 삭제
         mssql.connect(config, function (err) {
-                
+
             console.log('Connect');
             var request = new mssql.Request();
 
@@ -630,16 +719,24 @@ router.post('/logout', function (req, res, next) {
 
             request.query(deleteSession, function (err, result) {
 
-                // 현재 세센 파일 삭제
+                // 세션삭제
+                req.session.destroy(function () {
+
+                    // 로그인화면으로 이동
+                    res.redirect('/login');
+                })
+
+                
+                /* // 현재 세센 파일 삭제
                 var file = 'sessions/' + req.sessionID + '.json';
                 fs.unlink(file, function (err) {
                     if (err) {
                         console.log(err);
                     } else {
                         console.log('세션파일을 삭제했습니다!!');
-                        res.redirect('/login');
+                        
                     }
-                })
+                }) */
             })
         });
 
@@ -649,13 +746,15 @@ router.post('/logout', function (req, res, next) {
 
 });
 
-// 쿠키, 세션확인
+/* // 쿠키, 세션확인
 router.get('/getSession', function (req, res, next) {
 
     try {
 
-        //console.log('getMac : ', getmac.default());
+        console.log('getSession!!');
 
+        // 기기의 맥어드레스가 아니라, 연결한 서버의 맥어드레스가 출력된다..
+        console.log('getMac : ', getmac.default());
         console.log(JSON.stringify(macaddress.networkInterfaces(), null, 5));
 
         console.log('req.headers["user-agent"] : ', req.headers['user-agent']);
@@ -747,42 +846,110 @@ router.get('/getSession', function (req, res, next) {
     } catch (err) {
         console.log(err);
     }
-});
+}); */
 
 // mssql에서 세션 확인해서 변경하기
 router.get('/getSessionMssql', function (req, res, next) {
 
     try {
 
-        // 1. mssql에서 쿠키에 담긴 세션id 찾기
+        console.log('getSessionMssql!!');
+
+        var sessionID = req.sessionID;
+
+        console.log('sessionID : ', sessionID);
+
+        // 1. user_session 쿠키가 있는지 확인하기
         var user_session = req.cookies.user_session;
 
-        mssql.connect(config, function (err) {
-                
-            console.log('Connect');
-            var request = new mssql.Request();
+        if (user_session == undefined) {
 
-            var findSession = "SELECT sessionData FROM session WHERE sessionId = '" + user_session + "'";
+            // 없음
+            // 1-1. 로그인화면 보여주기
+            console.log('user_session 쿠키 없음!!');
+            res.json({ data: 'NO' });
 
-            request.query(findSession, function (err, result) {
+        } else {
 
-                console.log('sessionData : ', result.recordset[0].sessionData); // mssql에서 조회한 sessionData
+            // 있음
+            console.log('user_session 쿠키 있음!!');
 
-                // sessionData에서 passport 부분을 잘라온다.
-                // 지금 세션값이랑 합친다.
-                // 지금 세션에 합친 내용 넣기
-                // mssql에 지금 세션 정보 insert
-                // 메인으로 이동
-            })
-        });
+            // 1-2. user_session 값(세션ID), 지금 세션ID 같은지 확인하기
+            if (user_session == sessionID) {
+
+                // 같음
+                // 1-2-1. 메인으로 이동(자동로그인)
+                console.log('세션ID 같음!!');
+                res.json({ data: 'OK' });
+
+            } else {
+
+                // 다름
+                // 1-2-2. 세션내용(passport부분) 옮기고 예전 세션 파일삭제 후 메인으로 이동(자동로그인)
+                console.log('세션ID 다름!!');
+
+                mssql.connect(config, function (err) {
+
+                    console.log('Connect');
+                    var request = new mssql.Request();
+
+                    // 예전 세션 찾기
+                    var findOldSession = "SELECT sessionData FROM session WHERE sessionId = '" + user_session + "'";
+                    // 예전 세션 삭제
+                    var deleteOldSession = "DELETE FROM session WHERE sessionId = '" + user_session + "'";
+
+                    request.query(findOldSession, function (err, result) {
+
+                        console.log('sessionData : ', result.recordset[0].sessionData); // mssql에서 조회한 sessionData
+                        var sessionData = result.recordset[0].sessionData;
+
+                        // sessionData에서 passport 부분을 잘라온다.
+                        console.log('"passport" 위치 : ', sessionData.indexOf('"passport"'));
+                        var passportIndex = sessionData.indexOf('"passport"');
+
+                        console.log('"passport"~ : ', sessionData.substr(passportIndex));
+                        var passport = sessionData.substr(passportIndex);
+
+                        // passport에서 user부분만 가져오기
+                        var userIndex = passport.indexOf('"user"');
+                        var user = passport.substr(userIndex - 1, passport.length - userIndex);
+                        console.log('"user"~ : ', user);
+
+                        // user를 객체로 만들어서 지금 세션에 passport 값으로 넣는다.
+                        var obj = JSON.parse(user);
+
+                        console.log('지금세션(전) : ', req.session);
+                        req.session.passport = obj;
+                        console.log('지금세션(후) : ', req.session);
+
+                        // mssql에서 지금 세션 정보 insert
+                        var insertNewSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+                        request.query(insertNewSession, function (err, result) {
+
+                            // mssql에서 이전 세션 정보 delete
+                            request.query(deleteOldSession, function (err, result) {
+
+                                // 현재세션ID로 쿠키 생성
+                                res.cookie('user_session', req.sessionID, {
+                                    httpOnly: true,
+                                    secure: true,
+                                    maxAge: 31536000000 // 1년
+                                });
+                                res.json({ data: 'OK' });
+                            })
+                        })
+                    })
+                });
+            }
+        }
     }
     catch (err) {
         console.log(err);
     }
 });
 
-// 로그인한 사용자 이름 가져오기
-router.get('/getName', function (req, res, next) {
+// 로그인한 사용자 정보 가져오기
+router.get('/getUser', function (req, res, next) {
 
     try {
         console.log('sessionID : ', req.sessionID);
@@ -790,14 +957,16 @@ router.get('/getName', function (req, res, next) {
 
         if (req.user == undefined) {
 
-            res.json({data: 'NO'});
+            res.json({ data: 'NO' });
 
         } else {
 
             // passport.deserializeUser 에서 반환한 내용을 
             // req.user에서 접근할 수 있다.
-            name = req.user.name;
-            res.json({ data: 'OK', name: name });
+            var name = req.user.name;
+            var email = req.user.email;
+            var login_method = req.user.provider;
+            res.json({ data: 'OK', name: name, email: email, login_method: login_method});
         }
 
     } catch (err) {
@@ -805,16 +974,18 @@ router.get('/getName', function (req, res, next) {
     }
 });
 
+// 창 종료 이벤트
 router.post('/close', function (req, res, next) {
 
     console.log('창닫음!!');
 })
 
+/* // 기기 uuid 가져오기 - 분별력없음..
 router.get('/getUUID', function (req, res, next) {
 
     console.log('getUUID!!');
     console.log('uuid : ', req.query.uuid);
-})
+}) */
 
 /* GET users listing. */
 router.get('/', function (req, res, next) {
