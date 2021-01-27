@@ -34,6 +34,7 @@ app.use(session({
   resave: false,            // true : 서버에 접속할 때마다 세션id 재발급(새로고침할때마다)
   saveUninitialized: true,  // true : 세션 사용하기 전까지 세션id 발급X
   //store: new FileStore(fileStoreOptions),
+  rolling: true,
   cookie: {
     httpOnly: true,         // 자바스크립트의 document.cookie를 이용해서 쿠키에 접속을 막는 옵션
     secure: true            // https로 통신하는 경우만 전송하는 옵션

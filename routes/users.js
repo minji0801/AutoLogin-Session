@@ -64,98 +64,109 @@ passport.deserializeUser(function (user, done) {
 router.post('/signup', function (req, res, next) {
     try {
         console.log('signup!!');
-        console.log(req.body.name);
-        console.log(req.body.email);
-        console.log(req.body.pw);
 
-        var sessionID = req.sessionID;
+        // var sessionID = req.sessionID;
         var id = Math.random().toString(36).slice(2);
+        var name = req.body.name;
         var email = req.body.email;
         var pw = req.body.pw;
-        var name = req.body.name;
+        var pwCheck = req.body.pwCheck;
 
-        mssql.connect(config, function (err) {
+        if (name == '' || email == '' || pw == '' || pwCheck == '') {
 
-            console.log('Connect');
-            var request = new mssql.Request();
+            console.log('내용이 비었음!');
+            res.json({ data: 'NULL' });
 
-            var checkEmail = "SELECT * FROM tALU WHERE email = '" + email + "'";
-            var insertData = "INSERT INTO tALU VALUES ('" + id + "', '" + email + "', '" + pw + "', '" + name + "', 'email');";
-            var getData = "SELECT * FROM tALU WHERE id = '" + id + "'";
+        } else if (pw != pwCheck) {
 
-            // 이메일 중복 확인
-            request.query(checkEmail, function (err, result) {
+            console.log('비밀번호가 일치하지 않음!');
+            res.json({ data: 'DP' });
 
-                if (result.rowsAffected[0] == 0) {
+        } else {
 
-                    // 중복 없음 -> 회원가입 가능
-                    request.query(insertData, function (err, result) {
+            mssql.connect(config, function (err) {
 
-                        console.log('이메일 중복없음!');
+                console.log('Connect');
+                var request = new mssql.Request();
 
-                        // INSERT한 사용자 데이터 가져와서 세션에 넣기
-                        request.query(getData, function (err, result) {
+                var checkEmail = "SELECT * FROM tALU WHERE email = '" + email + "'";
+                var insertData = "INSERT INTO tALU VALUES ('" + id + "', '" + email + "', '" + pw + "', '" + name + "', 'email');";
+                var getData = "SELECT * FROM tALU WHERE id = '" + id + "'";
 
-                            var data = JSON.stringify(result.recordset[0]);
-                            
-                            console.log('"user"~ : ', '{"user":' + data + '}');
-                            var user = '{"user":' + data + '}';
+                // 이메일 중복 확인
+                request.query(checkEmail, function (err, result) {
 
-                            var obj = JSON.parse(user);
+                    if (result.rowsAffected[0] == 0) {
 
-                            console.log('지금세션(전) : ', req.session);
-                            req.session.passport = obj;
-                            console.log('지금세션(후) : ', req.session);
+                        // 중복 없음 -> 회원가입 가능
+                        request.query(insertData, function (err, result) {
 
-                            // mssql에서 지금 세션 정보 insert
-                            var insertNewSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
-                            request.query(insertNewSession, function (err, result) {
+                            console.log('이메일 중복없음!');
 
-                                // 현재세션ID로 쿠키 생성
-                                res.cookie('user_session', req.sessionID, {
-                                    httpOnly: true,
-                                    secure: true,
-                                    maxAge: 31536000000 // 1년
-                                });
-                                res.json({ data: 'OK' });
-                            })
-                            /* // FileStore 였을 때
-                            // 현재 세션파일 내용 가져오기
-                            var s_file = fs.readFileSync('sessions/' + sessionID + '.json');
-                            var s_fileToJson = JSON.parse(s_file);
-                            var s_jsonToString = JSON.stringify(s_fileToJson);
+                            // INSERT한 사용자 데이터 가져와서 세션에 넣기
+                            request.query(getData, function (err, result) {
 
-                            // 두 내용 붙이기
-                            var str = s_jsonToString.substr(0, s_jsonToString.length - 1);
-                            str = str + ',"passport":{"user":' + data + '}}';
-                            console.log('str : ', str);
+                                var data = JSON.stringify(result.recordset[0]);
 
-                            // 현재세션파일에 내용 덮어쓰기
-                            var file = 'sessions/' + sessionID + '.json';
-                            fs.writeFile(file, str, function (err) {
-                                if (err) {
-                                    console.log(err);
-                                } else {
-                                    console.log('세션파일을 덮어썼습니다!!');
+                                console.log('"user"~ : ', '{"user":' + data + '}');
+                                var user = '{"user":' + data + '}';
 
-                                    // user_session 쿠키 생성
-                                    res.cookie('user_session', sessionID, {
+                                var obj = JSON.parse(user);
+
+                                console.log('지금세션(전) : ', req.session);
+                                req.session.passport = obj;
+                                console.log('지금세션(후) : ', req.session);
+
+                                // mssql에서 지금 세션 정보 insert
+                                var insertNewSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+                                request.query(insertNewSession, function (err, result) {
+
+                                    // 현재세션ID로 쿠키 생성
+                                    res.cookie('user_session', req.sessionID, {
+                                        httpOnly: true,
+                                        secure: true,
                                         maxAge: 31536000000 // 1년
                                     });
-
                                     res.json({ data: 'OK' });
-                                }
-                            }); */
+                                })
+                                /* // FileStore 였을 때
+                                // 현재 세션파일 내용 가져오기
+                                var s_file = fs.readFileSync('sessions/' + sessionID + '.json');
+                                var s_fileToJson = JSON.parse(s_file);
+                                var s_jsonToString = JSON.stringify(s_fileToJson);
+    
+                                // 두 내용 붙이기
+                                var str = s_jsonToString.substr(0, s_jsonToString.length - 1);
+                                str = str + ',"passport":{"user":' + data + '}}';
+                                console.log('str : ', str);
+    
+                                // 현재세션파일에 내용 덮어쓰기
+                                var file = 'sessions/' + sessionID + '.json';
+                                fs.writeFile(file, str, function (err) {
+                                    if (err) {
+                                        console.log(err);
+                                    } else {
+                                        console.log('세션파일을 덮어썼습니다!!');
+    
+                                        // user_session 쿠키 생성
+                                        res.cookie('user_session', sessionID, {
+                                            maxAge: 31536000000 // 1년
+                                        });
+    
+                                        res.json({ data: 'OK' });
+                                    }
+                                }); */
+                            })
                         })
-                    })
-                } else {
+                    } else {
 
-                    // 중복 있음 -> 회원가입 불가능
-                    console.log('이메일 중복있음!');
-                    res.json({ data: 'NO' });
-                }
-            })
-        });
+                        // 중복 있음 -> 회원가입 불가능
+                        console.log('이메일 중복있음!');
+                        res.json({ data: 'OVERLAP' });
+                    }
+                })
+            });
+        }
     }
     catch (err) {
         console.log(err);
@@ -216,8 +227,7 @@ router.post('/emaillogin', function (req, res, next) {
 
                 // user 없음
                 console.log('아이디 또는 비밀번호가 일치하지 않습니다.');
-                
-                return res.json({data:'NO'});
+                return res.json({ data: 'NO' });
 
             } else {
 
@@ -247,7 +257,7 @@ router.post('/emaillogin', function (req, res, next) {
                                     maxAge: 31536000000 // 1년
                                 });
 
-                                return res.json({data:'OK'});
+                                return res.json({ data: 'OK' });
                             })
                         });
                     });
@@ -726,7 +736,7 @@ router.post('/logout', function (req, res, next) {
                     res.redirect('/login');
                 })
 
-                
+
                 /* // 현재 세센 파일 삭제
                 var file = 'sessions/' + req.sessionID + '.json';
                 fs.unlink(file, function (err) {
@@ -855,91 +865,120 @@ router.get('/getSessionMssql', function (req, res, next) {
 
         console.log('getSessionMssql!!');
 
-        var sessionID = req.sessionID;
+        // 모바일인지 아닌지 확인하기
+        var userAgent = req.headers['user-agent'];
+        var device_detector = new DeviceDetector().parse(userAgent);
+        console.log('device-type : ', device_detector.device.type)
+        var deviceType = device_detector.device.type;
 
-        console.log('sessionID : ', sessionID);
+        if (deviceType == 'desktop') {
 
-        // 1. user_session 쿠키가 있는지 확인하기
-        var user_session = req.cookies.user_session;
-
-        if (user_session == undefined) {
-
-            // 없음
-            // 1-1. 로그인화면 보여주기
-            console.log('user_session 쿠키 없음!!');
+            // 자동로그인 안됨
+            console.log('desktop은 자동로그인 불가!!');
             res.json({ data: 'NO' });
 
         } else {
 
-            // 있음
-            console.log('user_session 쿠키 있음!!');
+            // 자동로그인 가능
+            var sessionID = req.sessionID;
 
-            // 1-2. user_session 값(세션ID), 지금 세션ID 같은지 확인하기
-            if (user_session == sessionID) {
+            console.log('sessionID : ', sessionID);
 
-                // 같음
-                // 1-2-1. 메인으로 이동(자동로그인)
-                console.log('세션ID 같음!!');
-                res.json({ data: 'OK' });
+            // 1. user_session 쿠키가 있는지 확인하기
+            var user_session = req.cookies.user_session;
+
+            if (user_session == undefined) {
+
+                // 없음
+                // 1-1. 로그인화면 보여주기
+                console.log('user_session 쿠키 없음!!');
+                res.json({ data: 'NO' });
 
             } else {
 
-                // 다름
-                // 1-2-2. 세션내용(passport부분) 옮기고 예전 세션 파일삭제 후 메인으로 이동(자동로그인)
-                console.log('세션ID 다름!!');
+                // 있음
+                console.log('user_session 쿠키 있음!!');
 
-                mssql.connect(config, function (err) {
+                // 1-2. user_session 값(세션ID), 지금 세션ID 같은지 확인하기
+                if (user_session == sessionID) {
 
-                    console.log('Connect');
-                    var request = new mssql.Request();
+                    // 같음
+                    // 1-2-1. 메인으로 이동(자동로그인)
+                    console.log('세션ID 같음!!');
+                    res.json({ data: 'OK' });
 
-                    // 예전 세션 찾기
-                    var findOldSession = "SELECT sessionData FROM session WHERE sessionId = '" + user_session + "'";
-                    // 예전 세션 삭제
-                    var deleteOldSession = "DELETE FROM session WHERE sessionId = '" + user_session + "'";
+                } else {
 
-                    request.query(findOldSession, function (err, result) {
+                    // 다름
+                    // 1-2-2. 예전 세션 찾아서 내용가져온 후 삭제하고 지금 세션 INSERT => 메인으로 이동(자동로그인)
+                    console.log('세션ID 다름!!');
 
-                        console.log('sessionData : ', result.recordset[0].sessionData); // mssql에서 조회한 sessionData
-                        var sessionData = result.recordset[0].sessionData;
+                    mssql.connect(config, function (err) {
 
-                        // sessionData에서 passport 부분을 잘라온다.
-                        console.log('"passport" 위치 : ', sessionData.indexOf('"passport"'));
-                        var passportIndex = sessionData.indexOf('"passport"');
+                        console.log('Connect');
+                        var request = new mssql.Request();
 
-                        console.log('"passport"~ : ', sessionData.substr(passportIndex));
-                        var passport = sessionData.substr(passportIndex);
+                        // 예전 세션 찾기
+                        var findOldSession = "SELECT sessionData FROM session WHERE sessionId = '" + user_session + "'";
+                        // 예전 세션 삭제
+                        var deleteOldSession = "DELETE FROM session WHERE sessionId = '" + user_session + "'";
 
-                        // passport에서 user부분만 가져오기
-                        var userIndex = passport.indexOf('"user"');
-                        var user = passport.substr(userIndex - 1, passport.length - userIndex);
-                        console.log('"user"~ : ', user);
+                        request.query(findOldSession, function (err, result) {
 
-                        // user를 객체로 만들어서 지금 세션에 passport 값으로 넣는다.
-                        var obj = JSON.parse(user);
+                            // 예전 세션 db에 있는지 확인
+                            if (result.rowsAffected[0] == 0) {
 
-                        console.log('지금세션(전) : ', req.session);
-                        req.session.passport = obj;
-                        console.log('지금세션(후) : ', req.session);
+                                // db에 예전 세션 없음
+                                console.log('예전 세션 없음!!');
+                                res.json({ data: 'NO' });
 
-                        // mssql에서 지금 세션 정보 insert
-                        var insertNewSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
-                        request.query(insertNewSession, function (err, result) {
+                            } else {
 
-                            // mssql에서 이전 세션 정보 delete
-                            request.query(deleteOldSession, function (err, result) {
+                                // db에 예전 세션 있음
+                                console.log('예전 세션 있음!!');
 
-                                // 현재세션ID로 쿠키 생성
-                                res.cookie('user_session', req.sessionID, {
-                                    httpOnly: true,
-                                    secure: true,
-                                    maxAge: 31536000000 // 1년
-                                });
-                                res.json({ data: 'OK' });
-                            })
+                                console.log('sessionData : ', result.recordset[0].sessionData); // mssql에서 조회한 sessionData
+                                var sessionData = result.recordset[0].sessionData;
+
+                                // sessionData에서 passport 부분을 잘라온다.
+                                console.log('"passport" 위치 : ', sessionData.indexOf('"passport"'));
+                                var passportIndex = sessionData.indexOf('"passport"');
+
+                                console.log('"passport"~ : ', sessionData.substr(passportIndex));
+                                var passport = sessionData.substr(passportIndex);
+
+                                // passport에서 user부분만 가져오기
+                                var userIndex = passport.indexOf('"user"');
+                                var user = passport.substr(userIndex - 1, passport.length - userIndex);
+                                console.log('"user"~ : ', user);
+
+                                // user를 객체로 만들어서 지금 세션에 passport 값으로 넣는다.
+                                var obj = JSON.parse(user);
+
+                                console.log('지금세션(전) : ', req.session);
+                                req.session.passport = obj;
+                                console.log('지금세션(후) : ', req.session);
+
+                                // mssql에서 지금 세션 정보 insert
+                                var insertNewSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+                                request.query(insertNewSession, function (err, result) {
+
+                                    // mssql에서 이전 세션 정보 delete
+                                    request.query(deleteOldSession, function (err, result) {
+
+                                        // 현재세션ID로 쿠키 생성
+                                        res.cookie('user_session', req.sessionID, {
+                                            httpOnly: true,
+                                            secure: true,
+                                            maxAge: 31536000000 // 1년
+                                        });
+                                        res.json({ data: 'OK' });
+                                    })
+                                })
+                            }
                         })
-                    })
-                });
+                    });
+                }
             }
         }
     }
@@ -966,7 +1005,7 @@ router.get('/getUser', function (req, res, next) {
             var name = req.user.name;
             var email = req.user.email;
             var login_method = req.user.provider;
-            res.json({ data: 'OK', name: name, email: email, login_method: login_method});
+            res.json({ data: 'OK', name: name, email: email, login_method: login_method });
         }
 
     } catch (err) {
@@ -977,7 +1016,43 @@ router.get('/getUser', function (req, res, next) {
 // 창 종료 이벤트
 router.post('/close', function (req, res, next) {
 
-    console.log('창닫음!!');
+    try {
+        console.log('close!!');
+
+        // desktop이면 쿠키랑 세션 없애기
+        var userAgent = req.headers['user-agent'];
+        var device_detector = new DeviceDetector().parse(userAgent);
+
+        console.log('device-type : ', device_detector.device.type)
+        var deviceType = device_detector.device.type;
+
+        if (deviceType == 'desktop') {
+
+            // 쿠키 삭제
+            res.clearCookie('user_session');
+
+            // mssql에서 세션 삭제
+            mssql.connect(config, function (err) {
+
+                console.log('Connect');
+                var request = new mssql.Request();
+
+                var deleteSession = "DELETE FROM session WHERE sessionId = '" + req.sessionID + "'";
+
+                request.query(deleteSession, function (err, result) {
+
+                    // 세션삭제
+                    req.session.destroy(function () {
+
+                    })
+                })
+            });
+        } else {
+
+        }
+    } catch (err) {
+        console.log(err);
+    }
 })
 
 /* // 기기 uuid 가져오기 - 분별력없음..
