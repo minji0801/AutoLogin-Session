@@ -25,7 +25,7 @@
     <script>
 
         $(function() {
-            getName();
+            checkSession();
         })
 
         // 창 종료 이벤트
@@ -39,6 +39,26 @@
                 }
             });
         })
+
+        function checkSession() {
+            $.ajax({
+                type: 'GET',
+                url: '/users/checkSession',
+                success: function (response) {
+
+                    if (response.data == 'NO') {
+
+                        alert('로그인해주세요.');
+                        location.href = '/login';
+
+                    } else if (response.data == 'OK') {
+
+                        getName();
+                    }
+
+                }
+            });
+        }
 
         function getName() {
             $.ajax({
