@@ -119,7 +119,7 @@ router.post('/signup', function (req, res, next) {
                                 console.log('지금세션(후) : ', req.session);
 
                                 // mssql에서 지금 세션 정보 insert
-                                var insertNewSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', GETDATE())";
+                                var insertNewSession = "INSERT INTO session VALUES ('" + req.sessionID + "', '" + JSON.stringify(req.session) + "', '" + email + "', 'email', GETDATE())";
                                 request.query(insertNewSession, function (err, result) {
 
                                     // 현재세션ID로 쿠키 생성
@@ -639,7 +639,7 @@ router.get('/getSessionMssql', function (req, res, next) {
             // 자동로그인 안됨
             console.log('sessionId : ', sessionId);
             console.log('desktop은 자동로그인 불가!!');
-            res.json({ data: 'NO' });
+            res.json({ data: 'NO'});
 
         } else {
 
@@ -719,7 +719,8 @@ router.get('/getUser', function (req, res, next) {
             var name = req.user.name;
             var email = req.user.email;
             var login_method = req.user.provider;
-            res.json({ data: 'OK', name: name, email: email, login_method: login_method });
+            //var profile_image = req.user.profile_image;
+            res.json({ data: 'OK', name: name, email: email, login_method: login_method});
         }
 
     } catch (err) {

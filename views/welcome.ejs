@@ -53,14 +53,14 @@
 
                     } else if (response.data == 'OK') {
 
-                        getName();
+                        getUser();
                     }
 
                 }
             });
         }
 
-        function getName() {
+        function getUser() {
             $.ajax({
                 type: 'GET',
                 url: '/users/getUser',
@@ -77,6 +77,7 @@
                         $('#name').text(response.name);
                         $('#email').text(response.email);
                         $('#login_method').text(response.login_method);
+                        //$('.profile-image').css('background-image', response.profile_iamge);
                     }
                 }
             });
@@ -88,6 +89,7 @@
     <div class="wrap">
         <div class="title">마이페이지</div>
         <div class="info-header">
+            <div class="profile-image"></div>
             <div class="username">
                 <span class="name" id="name"></span>님
             </div>

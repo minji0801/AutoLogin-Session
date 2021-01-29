@@ -36,7 +36,7 @@ app.use(session({
   //store: new FileStore(fileStoreOptions),
   rolling: true,
   cookie: {
-    maxAge:10000,           // 만료기간
+    maxAge: 600000 ,        // 만료기간 10분
     httpOnly: true,         // 자바스크립트의 document.cookie를 이용해서 쿠키에 접속을 막는 옵션
     secure: true            // https로 통신하는 경우만 전송하는 옵션
   }

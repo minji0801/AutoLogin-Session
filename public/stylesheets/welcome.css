@@ -43,8 +43,20 @@
     box-shadow: 0 2px 4px 0 rgba(80, 80, 80, 0.05);
 }
 
+.profile-image {
+    width: 60px;
+    height: 60px;
+    margin: 20px 0px 0px 20px;
+    border-radius: 50%;
+    background-color: lightgray;
+    float: left;
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhwaLDKaK49tsHmdMGOrmTdns5qiw080F2Yw&usqp=CAU');
+    background-position: center;
+    background-size: cover;
+}
+
 .username {
-    margin: 30px 0px 0px 20px;
+    margin: 40px 0px 0px 20px;
     font-family: 'S-CoreDream-5';
     font-size: 20px;
     font-weight: 500;
@@ -67,7 +79,7 @@ form {
 .btn-logout {
     width: 82px;
     height: 36px;
-    margin: 20px 20px 0px auto;
+    margin: 30px 20px 0px auto;
     padding: 9px 14px 8px;
     border-radius: 50px;
     border: solid 1px #dbdbdb;
@@ -89,7 +101,7 @@ form {
 
 .info-header {
     width: 375px;
-    height: 60px;
+    height: 80px;
 }
 
 .info-footer {
