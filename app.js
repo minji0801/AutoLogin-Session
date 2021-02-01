@@ -15,15 +15,11 @@ const request = require('request');
 
 // SSL 인증서
 const options = {
-    key: fs.readFileSync('public/keys/key.pem'),
-    cert: fs.readFileSync('public/keys/server.crt')
+  key: fs.readFileSync('public/keys/key.pem'),
+  cert: fs.readFileSync('public/keys/server.crt')
 };
 
 var app = express();
-
-
-/* 세션쿠키 생성 */
-app.use(cookieParser());
 
 /* var fileStoreOptions = {
   reapInterval: -1
@@ -36,7 +32,7 @@ app.use(session({
   //store: new FileStore(fileStoreOptions),
   rolling: true,
   cookie: {
-    maxAge: 600000 ,        // 만료기간 10분
+    maxAge: 600000,        // 만료기간 10분
     httpOnly: true,         // 자바스크립트의 document.cookie를 이용해서 쿠키에 접속을 막는 옵션
     secure: true            // https로 통신하는 경우만 전송하는 옵션
   }
@@ -48,8 +44,8 @@ app.set('view engine', 'ejs');
 app.engine('html', require('ejs').renderFile);
 
 app.use(logger('dev'));
-app.use(express.json({ limit : "50mb" })); 
-app.use(express.urlencoded({ limit:"50mb", extended: true ,parameterLimit:50000}));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -57,24 +53,24 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/api', apiRouter);
 
-app.all('/*', function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    if (!req.secure) {
-        res.redirect("https://" + req.headers.host + req.url);
-    } else {
-        next();
-    }
+app.all('/*', function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  if (!req.secure) {
+    res.redirect("https://" + req.headers.host + req.url);
+  } else {
+    next();
+  }
 });
 
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
@@ -89,8 +85,8 @@ app.use(function(err, req, res, next) {
 // http 8087
 var serverHTTP = require('http').createServer(app);
 var io = require('socket.io')(serverHTTP);
-serverHTTP.listen(8087, function() {
-    console.log('Socket IO server listening on port 8087');
+serverHTTP.listen(8087, function () {
+  console.log('Socket IO server listening on port 8087');
 });
 
 // https 443
@@ -98,11 +94,11 @@ var serverHTTPS = require('https').createServer(options, app);
 
 var io = require('socket.io')(serverHTTPS);
 
-serverHTTPS.listen(443, function() {
-    console.log('Socket IO server listening on port 443');
+serverHTTPS.listen(443, function () {
+  console.log('Socket IO server listening on port 443');
 });
 
-io.on('connection', function(socket) {
+io.on('connection', function (socket) {
   console.log('Socket id ' + socket.id + 'Connected');
 
   // 방에 대한 정보는 따로 가지고 있어야 한다.
@@ -121,49 +117,49 @@ io.on('connection', function(socket) {
     // socket.socket.reconnectionDelay /= 2;
   });
 
-  socket.on('Login', function(data) {
-      console.log('Client logged-in:\n name:' + data.B_Name + '\n userid: ' + data.B_Login_ID);
+  socket.on('Login', function (data) {
+    console.log('Client logged-in:\n name:' + data.B_Name + '\n userid: ' + data.B_Login_ID);
 
-      socket.name = data.B_Name;
-      socket.userid = data.B_Login_ID;
+    socket.name = data.B_Name;
+    socket.userid = data.B_Login_ID;
 
-      // Room 정보 파싱이 안됨...
-      // 그냥 정보 보내고 할때 Room 정보를 가져오게 하자
-      console.log('socket info set');
+    // Room 정보 파싱이 안됨...
+    // 그냥 정보 보내고 할때 Room 정보를 가져오게 하자
+    console.log('socket info set');
 
-      // 로그인 사용자에 따라서 Join을 다시 걸어준다.
-      // if(data.name == "us.Kim") {
-      //   socket.join("room1");
-      // } else {
-      //   socket.join("room2");
-      // }
-      //socket.join("room1");
+    // 로그인 사용자에 따라서 Join을 다시 걸어준다.
+    // if(data.name == "us.Kim") {
+    //   socket.join("room1");
+    // } else {
+    //   socket.join("room2");
+    // }
+    //socket.join("room1");
 
-      // 이곳에서 post 보내는 방법
-      // 서버에서 동작하기 때문에 127.0.0.1로 해도 될것 같다.
-      const options = {
-        uri:'http://127.0.0.1:8087/api/chat_list', 
-        body: { pB_IDs:data.B_IDs },
-        json: true
+    // 이곳에서 post 보내는 방법
+    // 서버에서 동작하기 때문에 127.0.0.1로 해도 될것 같다.
+    const options = {
+      uri: 'http://127.0.0.1:8087/api/chat_list',
+      body: { pB_IDs: data.B_IDs },
+      json: true
+    }
+
+    // 해당 방식을 통해서 API와 통신 가능
+    request.post(options, function (err, httpResponse, body) {
+      //console.log(body.data.length);
+
+      for (i = 0; i < body.data.length; i++) {
+        socket.join(body.data[i].CRU_CR_IDs);
+
+        console.log('join : ' + body.data[i].CRU_CR_IDs);
       }
 
-      // 해당 방식을 통해서 API와 통신 가능
-      request.post(options, function (err,httpResponse,body) {
-          //console.log(body.data.length);
-
-          for(i=0; i<body.data.length; i++) {
-            socket.join(body.data[i].CRU_CR_IDs);
-
-            console.log('join : ' + body.data[i].CRU_CR_IDs);
-          }
-
-          console.log('login end');
-          //client.send("post req called",postdata);
-      });
+      console.log('login end');
+      //client.send("post req called",postdata);
+    });
 
   });
 
-  socket.on('Message', function(data) {
+  socket.on('Message', function (data) {
     // console.log('Client logged-in:\n name:' + data.name + '\n userid: ' + data.userid);
 
     // socket.name = data.name;
@@ -190,61 +186,61 @@ io.on('connection', function(socket) {
     // });
 
     const options = {
-      uri:'http://127.0.0.1:8087/api/insert_chat_detail', 
-      body: { pB_IDs:data.B_IDs, pCR_IDs:data.CR_IDs, pMessage:data.message},
+      uri: 'http://127.0.0.1:8087/api/insert_chat_detail',
+      body: { pB_IDs: data.B_IDs, pCR_IDs: data.CR_IDs, pMessage: data.message },
       json: true
     }
 
     // 해당 방식을 통해서 API와 통신 가능
-    request.post(options, function (err,httpResponse,body) {
-        //console.log(body.data.length);
-        //client.send("post req called",postdata);
+    request.post(options, function (err, httpResponse, body) {
+      //console.log(body.data.length);
+      //client.send("post req called",postdata);
     });
 
     console.log("socket Name : " + socket.name);
 
     socket.broadcast.to(data.CR_IDs).emit('Message_Res', {
-        message : data.message,
-        CR_IDs : data.CR_IDs,
-        writeName : socket.name
+      message: data.message,
+      CR_IDs: data.CR_IDs,
+      writeName: socket.name
     });
 
-    socket.emit('Message_Suc', 
+    socket.emit('Message_Suc',
       {
-        success:'OK'
+        success: 'OK'
       }
     );
 
     console.log('Message end');
   });
 
-  socket.on('File', function(data) {
-    
+  socket.on('File', function (data) {
+
     const options = {
-      uri:'http://127.0.0.1:8087/api/insert_chat_detail_file', 
-      body: { pB_IDs:data.B_IDs, pCR_IDs:data.CR_IDs, pMessage:data.message, pFileName: data.fileName},
+      uri: 'http://127.0.0.1:8087/api/insert_chat_detail_file',
+      body: { pB_IDs: data.B_IDs, pCR_IDs: data.CR_IDs, pMessage: data.message, pFileName: data.fileName },
       json: true
     }
 
     // 해당 방식을 통해서 API와 통신 가능
-    request.post(options, function (err,httpResponse,body) {
-        //console.log(body.data.length);
-        //client.send("post req called",postdata);
+    request.post(options, function (err, httpResponse, body) {
+      //console.log(body.data.length);
+      //client.send("post req called",postdata);
     });
 
     console.log("socket Name : " + socket.name);
 
     socket.broadcast.to(data.CR_IDs).emit('Message_Res_file', {
-        message : data.message,
-        fileName : data.fileName,
-        CR_IDs : data.CR_IDs,
-        writeName : socket.name,
-        type : 'file'
+      message: data.message,
+      fileName: data.fileName,
+      CR_IDs: data.CR_IDs,
+      writeName: socket.name,
+      type: 'file'
     });
 
-    socket.emit('Message_Suc', 
+    socket.emit('Message_Suc',
       {
-        success:'OK'
+        success: 'OK'
       }
     );
 

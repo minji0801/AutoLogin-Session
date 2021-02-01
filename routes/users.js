@@ -32,6 +32,7 @@ var passport = require('passport')
     , GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 const { default: getMAC } = require('getmac');
 var checkDuplicateLogin = require('./checkDuplicateLogin');
+var checkMssqlSession = require('./checkMssqlSession');
 /* 여기까지 */
 
 
@@ -628,7 +629,8 @@ router.get('/getSessionMssql', function (req, res, next) {
     try {
 
         console.log('getSessionMssql!!');
-        console.log(req.isAuthenticated());
+        // console.log('getSessionMssql session : ', req.session);
+        console.log('getSessionMssql 로그인 상태 : ', req.isAuthenticated());
 
         var deviceType = checkDeviceType(req);
         var sessionId = req.sessionID;
@@ -639,7 +641,7 @@ router.get('/getSessionMssql', function (req, res, next) {
             // 자동로그인 안됨
             console.log('sessionId : ', sessionId);
             console.log('desktop은 자동로그인 불가!!');
-            res.json({ data: 'NO'});
+            res.json({ data: 'NO' });
 
         } else {
 
@@ -667,7 +669,7 @@ router.get('/getSessionMssql', function (req, res, next) {
                     console.log('세션ID 같음!!');
 
                     // 세션ID가 DB에 있는지 확인 후 있으면 로그인 처리
-                    checkMssqlSession(user_session, req, res);
+                    checkMssqlSession.users(user_session, req, res);
 
                 } else {
 
@@ -685,21 +687,24 @@ router.get('/getSessionMssql', function (req, res, next) {
     }
 });
 
-// welcome 페이지에서 세션 체크하기
+/* // welcome 페이지에서 세션 체크하기
 router.get('/checkSession', function (req, res, next) {
 
     try {
+        console.log('checkSession!!');
+        console.log('checkSession session : ', req.session);
+        console.log('checkSession 로그인 상태 : ', req.isAuthenticated());
 
         // 쿠키에 담긴 세션ID
         var user_session = req.cookies.user_session;
 
         // 세션ID가 DB에 있는지 확인 후 있으면 로그인 처리
-        checkMssqlSession(user_session, req, res);
+        checkMssqlSession.users(user_session, req, res);
 
     } catch (err) {
         console.log(err);
     }
-})
+}) */
 
 // 로그인한 사용자 정보 가져오기
 router.get('/getUser', function (req, res, next) {
@@ -720,7 +725,7 @@ router.get('/getUser', function (req, res, next) {
             var email = req.user.email;
             var login_method = req.user.provider;
             //var profile_image = req.user.profile_image;
-            res.json({ data: 'OK', name: name, email: email, login_method: login_method});
+            res.json({ data: 'OK', name: name, email: email, login_method: login_method });
         }
 
     } catch (err) {
@@ -834,7 +839,7 @@ function checkDeviceType(req) {
     return deviceType
 }
 
-// mssql session check
+/* // mssql session check
 function checkMssqlSession(user_session, req, res) {
     mssql.connect(config, function (err) {
 
@@ -861,7 +866,7 @@ function checkMssqlSession(user_session, req, res) {
             }
         })
     })
-}
+} */
 
 // session update 
 function sessionUpdate(user_session, sessionId, req, res) {

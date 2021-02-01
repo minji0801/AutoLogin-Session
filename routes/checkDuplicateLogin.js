@@ -19,7 +19,7 @@ async function email(req, res) {
     var dup = await checkDuplicateSession(req.sessionID, req.session, req.user.email, req.user.provider);
     console.log('duplicateLogin : ', dup);
 
-    if (dup == 1) {
+    if (dup == 0) {
 
         res.cookie("user_session", req.sessionID, {
             httpOnly: true,
@@ -37,7 +37,7 @@ async function social(req, res) {
     var dup = await checkDuplicateSession(req.sessionID, req.session, req.user.email, req.user.provider);
     console.log('duplicateLogin : ', dup);
 
-    if (dup == 1) {
+    if (dup == 0) {
 
         res.cookie("user_session", req.sessionID, {
             httpOnly: true,
@@ -70,7 +70,7 @@ function checkDuplicateSession(sessionID, session, email, provider) {
                         if (result.rowsAffected[0] == 0) {
 
                             console.log('중복로그인 없음!!');
-                            resolve(1);
+                            resolve(0);
 
                         } else {
 
@@ -82,7 +82,7 @@ function checkDuplicateSession(sessionID, session, email, provider) {
                             // 중복 세션(이전) 삭제
                             request.query(deleteSession, function (err, result) {
 
-                                resolve(1);
+                                resolve(0);
                             })
                         }
                     })

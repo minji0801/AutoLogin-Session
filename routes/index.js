@@ -3,6 +3,13 @@ var router = express.Router();
 const mssql = require('mssql');
 /* GET home page. */
 
+/* 이 부분을 추가해줘야 */
+var passport = require('passport');
+router.use(passport.initialize());
+router.use(passport.session());
+/* req.isAuthenticated()를 사용할 수 있다. */
+
+var checkMssqlSession = require('./checkMssqlSession');
 const config = {
     // "user"      : "sa",
     // "password"  : "qw12qw12)",
@@ -100,8 +107,22 @@ router.get('/login', function (req, res, next) {
 
 router.get('/welcome', function (req, res, next) {
     console.log('welcome');
+    console.log('welcome 로그인 상태 : ', req.isAuthenticated());
 
-    res.render('welcome');
+    if (req.isAuthenticated()) {
+
+        // 세션아이디가 DB에 없어도 세션에 사용자 정보가 있으면 로그인 한 것으로 간주한다.
+        // 억지로 쿠키를 옮기면 기존 화면은 새로고침하면 로그인으로 돌아가야한다.(중복로그인)
+
+        var user_session = req.cookies.user_session;
+        checkMssqlSession.index(user_session, req, res);
+
+    } else {
+
+        res.render('login');
+
+    }
+
 });
 
 //리치 에디트 글 화면 이후 글 작성으로 넘어갈 화면임
